@@ -1,0 +1,15 @@
+
+ktor:
+  application:
+    modules:
+      - org.burgas.ApplicationKt.module
+  deployment:
+    port: 9000
+  postgres:
+    driver: org.postgresql.Driver
+    url: 'jdbc:postgresql://localhost:5000/wire_kotlin_db'
+    user: postgres
+    password: postgres
+  redis:
+    host: 'localhost'
+    port: 6000
