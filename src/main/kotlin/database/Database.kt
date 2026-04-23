@@ -2,9 +2,8 @@ package org.burgas.database
 
 import com.zaxxer.hikari.HikariConfig
 import com.zaxxer.hikari.HikariDataSource
-import io.ktor.server.application.Application
-import io.ktor.server.config.ApplicationConfig
-import kotlinx.datetime.LocalDateTime
+import io.ktor.server.application.*
+import io.ktor.server.config.*
 import org.jetbrains.exposed.dao.id.UUIDTable
 import org.jetbrains.exposed.sql.Database
 import org.jetbrains.exposed.sql.ReferenceOption
@@ -12,7 +11,6 @@ import org.jetbrains.exposed.sql.SchemaUtils
 import org.jetbrains.exposed.sql.Table
 import org.jetbrains.exposed.sql.kotlin.datetime.CurrentDateTime
 import org.jetbrains.exposed.sql.kotlin.datetime.datetime
-import org.jetbrains.exposed.sql.statements.api.ExposedBlob
 import org.jetbrains.exposed.sql.transactions.transaction
 import redis.clients.jedis.Jedis
 import java.sql.Connection
@@ -29,7 +27,7 @@ class DatabaseConnection {
                 jdbcUrl = config.property("ktor.postgres.url").getString()
                 username = config.property("ktor.postgres.user").getString()
                 password = config.property("ktor.postgres.password").getString()
-                maximumPoolSize = 50
+                maximumPoolSize = 150
                 isAutoCommit = false
                 validate()
             }
@@ -112,8 +110,8 @@ object MessageTable : UUIDTable("message") {
         name = "chat_id", refColumn = ChatTable.id,
         onDelete = ReferenceOption.CASCADE, onUpdate = ReferenceOption.CASCADE
     )
-    val identityId = optReference(
-        name = "identity_id", refColumn = IdentityTable.id,
+    val senderId = optReference(
+        name = "sender_id", refColumn = IdentityTable.id,
         onDelete = ReferenceOption.SET_NULL, onUpdate = ReferenceOption.CASCADE
     )
     val text = text("text")
