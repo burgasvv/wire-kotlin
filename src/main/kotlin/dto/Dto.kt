@@ -58,11 +58,8 @@ data class IdentityRequest(
 data class IdentityShortResponse(
     @Serializable(with = UUIDSerializer::class)
     override val id: UUID? = null,
-    val authority: Authority? = null,
     val username: String? = null,
-    val password: String? = null,
     val email: String? = null,
-    val status: Boolean? = null,
     val firstname: String? = null,
     val lastname: String? = null,
     val patronymic: String? = null,
@@ -73,11 +70,8 @@ data class IdentityShortResponse(
 data class IdentityFullResponse(
     @Serializable(with = UUIDSerializer::class)
     override val id: UUID? = null,
-    val authority: Authority? = null,
     val username: String? = null,
-    val password: String? = null,
     val email: String? = null,
-    val status: Boolean? = null,
     val firstname: String? = null,
     val lastname: String? = null,
     val patronymic: String? = null,
