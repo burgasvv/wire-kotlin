@@ -25,7 +25,6 @@ fun Application.configureSerialization() {
     }
 }
 
-@Suppress("unused")
 object UUIDSerializer : KSerializer<UUID> {
 
     override val descriptor: SerialDescriptor
