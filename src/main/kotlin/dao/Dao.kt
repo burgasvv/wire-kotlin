@@ -193,6 +193,7 @@ class ChatEntity(id: EntityID<UUID>) : UUIDEntity(id), Creator<ChatRequest>, Edi
             description = this.description,
             admin = this.admin?.toShortResponse(),
             images = this.images.map { it.toImageResponse() },
+            identities = this.identities.map { it.toShortResponse() },
             messages = this.messages.map { it.toShortResponse() },
             createdAt = this.createdAt.toJavaLocalDateTime()
                 .format(DateTimeFormatter.ofPattern("dd MMMM yyyy, hh:mm"))

@@ -109,6 +109,7 @@ data class ChatFullResponse(
     val description: String? = null,
     val admin: IdentityShortResponse? = null,
     val images: List<ImageResponse>? = null,
+    val identities: List<IdentityShortResponse>? = null,
     val messages: List<MessageShortResponse>? = null,
     val createdAt: String? = null
 ) : Response
