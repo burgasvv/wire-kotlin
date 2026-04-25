@@ -19,7 +19,11 @@ import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 import java.util.*
 
-interface Uploader<in E : UUIDEntity> {
+interface Dao
+
+interface Document
+
+interface Uploader<in E : Dao> {
     fun upload(entity: E, partData: PartData)
 }
 
@@ -38,7 +42,7 @@ interface ResponseFactory<out S : Response, out F : Response> {
     fun toFullResponse(): F
 }
 
-class IdentityEntity(id: EntityID<UUID>) : UUIDEntity(id), Creator<IdentityRequest>, Editor<IdentityRequest>,
+class IdentityEntity(id: EntityID<UUID>) : UUIDEntity(id), Dao, Creator<IdentityRequest>, Editor<IdentityRequest>,
     ResponseFactory<IdentityShortResponse, IdentityFullResponse> {
 
     companion object : UUIDEntityClass<IdentityEntity>(IdentityTable)
@@ -109,7 +113,7 @@ class IdentityEntity(id: EntityID<UUID>) : UUIDEntity(id), Creator<IdentityReque
     }
 }
 
-class IdentityImageEntity(id: EntityID<UUID>) : UUIDEntity(id), Uploader<IdentityEntity> {
+class IdentityImageEntity(id: EntityID<UUID>) : UUIDEntity(id), Document, Uploader<IdentityEntity> {
     companion object : UUIDEntityClass<IdentityImageEntity>(IdentityImageTable)
 
     var name by IdentityImageTable.name
@@ -122,11 +126,15 @@ class IdentityImageEntity(id: EntityID<UUID>) : UUIDEntity(id), Uploader<Identit
     @OptIn(InternalAPI::class)
     override fun upload(entity: IdentityEntity, partData: PartData) {
         if (partData is PartData.FileItem) {
-            this.name = partData.originalFileName!!
-            this.contentType = "${partData.contentType!!.contentType}/${partData.contentType!!.contentSubtype}"
-            this.preview = false
-            this.data = ExposedBlob(partData.provider().readBuffer.readByteArray())
-            this.identity = entity
+            if (partData.contentType!!.contentType.startsWith("image")) {
+                this.name = partData.originalFileName!!
+                this.contentType = "${partData.contentType!!.contentType}/${partData.contentType!!.contentSubtype}"
+                this.preview = false
+                this.data = ExposedBlob(partData.provider().readBuffer.readByteArray())
+                this.identity = entity
+            } else {
+                throw IllegalArgumentException("Wrong file content type")
+            }
         } else {
             throw IllegalArgumentException("Part data is not FileItem")
         }
@@ -142,7 +150,7 @@ class IdentityImageEntity(id: EntityID<UUID>) : UUIDEntity(id), Uploader<Identit
     }
 }
 
-class ChatEntity(id: EntityID<UUID>) : UUIDEntity(id), Creator<ChatRequest>, Editor<ChatRequest>,
+class ChatEntity(id: EntityID<UUID>) : UUIDEntity(id), Dao, Creator<ChatRequest>, Editor<ChatRequest>,
     ResponseFactory<ChatShortResponse, ChatFullResponse> {
 
     companion object : EntityClass<UUID, ChatEntity>(ChatTable)
@@ -201,7 +209,7 @@ class ChatEntity(id: EntityID<UUID>) : UUIDEntity(id), Creator<ChatRequest>, Edi
     }
 }
 
-class ChatImageEntity(id: EntityID<UUID>) : UUIDEntity(id), Uploader<ChatEntity> {
+class ChatImageEntity(id: EntityID<UUID>) : UUIDEntity(id), Document, Uploader<ChatEntity> {
     companion object : UUIDEntityClass<ChatImageEntity>(ChatImageTable)
 
     var name by ChatImageTable.name
@@ -214,11 +222,15 @@ class ChatImageEntity(id: EntityID<UUID>) : UUIDEntity(id), Uploader<ChatEntity>
     @OptIn(InternalAPI::class)
     override fun upload(entity: ChatEntity, partData: PartData) {
         if (partData is PartData.FileItem) {
-            this.name = partData.originalFileName!!
-            this.contentType = "${partData.contentType!!.contentType}/${partData.contentType!!.contentSubtype}"
-            this.preview = false
-            this.data = ExposedBlob(partData.provider().readBuffer.readByteArray())
-            this.chat = entity
+            if (partData.contentType!!.contentType.startsWith("image")) {
+                this.name = partData.originalFileName!!
+                this.contentType = "${partData.contentType!!.contentType}/${partData.contentType!!.contentSubtype}"
+                this.preview = false
+                this.data = ExposedBlob(partData.provider().readBuffer.readByteArray())
+                this.chat = entity
+            } else {
+                throw IllegalArgumentException("Wrong file content type")
+            }
         } else {
             throw IllegalArgumentException("Part data is not FileItem")
         }
@@ -234,7 +246,7 @@ class ChatImageEntity(id: EntityID<UUID>) : UUIDEntity(id), Uploader<ChatEntity>
     }
 }
 
-class MessageEntity(id: EntityID<UUID>) : UUIDEntity(id), Creator<MessageRequest>,
+class MessageEntity(id: EntityID<UUID>) : UUIDEntity(id), Dao, Creator<MessageRequest>,
     ResponseFactory<MessageShortResponse, MessageFullResponse> {
 
     companion object : UUIDEntityClass<MessageEntity>(MessageTable)
@@ -278,7 +290,7 @@ class MessageEntity(id: EntityID<UUID>) : UUIDEntity(id), Creator<MessageRequest
     }
 }
 
-class MessageFileEntity(id: EntityID<UUID>) : UUIDEntity(id), Uploader<MessageEntity> {
+class MessageFileEntity(id: EntityID<UUID>) : UUIDEntity(id), Document, Uploader<MessageEntity> {
     companion object : UUIDEntityClass<MessageFileEntity>(MessageFileTable)
 
     var name by MessageFileTable.name
@@ -308,7 +320,7 @@ class MessageFileEntity(id: EntityID<UUID>) : UUIDEntity(id), Uploader<MessageEn
     }
 }
 
-class CommunityEntity(id: EntityID<UUID>) : UUIDEntity(id), Creator<CommunityRequest>, Editor<CommunityRequest>,
+class CommunityEntity(id: EntityID<UUID>) : UUIDEntity(id), Dao, Creator<CommunityRequest>, Editor<CommunityRequest>,
     ResponseFactory<CommunityShortResponse, CommunityFullResponse> {
 
     companion object : UUIDEntityClass<CommunityEntity>(CommunityTable)
@@ -365,7 +377,7 @@ class CommunityEntity(id: EntityID<UUID>) : UUIDEntity(id), Creator<CommunityReq
     }
 }
 
-class CommunityImageEntity(id: EntityID<UUID>) : UUIDEntity(id), Uploader<CommunityEntity> {
+class CommunityImageEntity(id: EntityID<UUID>) : UUIDEntity(id), Document, Uploader<CommunityEntity> {
     companion object : UUIDEntityClass<CommunityImageEntity>(CommunityImageTable)
 
     var name by CommunityImageTable.name
@@ -378,11 +390,15 @@ class CommunityImageEntity(id: EntityID<UUID>) : UUIDEntity(id), Uploader<Commun
     @OptIn(InternalAPI::class)
     override fun upload(entity: CommunityEntity, partData: PartData) {
         if (partData is PartData.FileItem) {
-            this.name = partData.originalFileName!!
-            this.contentType = "${partData.contentType!!.contentType}/${partData.contentType!!.contentSubtype}"
-            this.preview = false
-            this.data = ExposedBlob(partData.provider().readBuffer.readByteArray())
-            this.community = entity
+            if (partData.contentType!!.contentType.startsWith("image")) {
+                this.name = partData.originalFileName!!
+                this.contentType = "${partData.contentType!!.contentType}/${partData.contentType!!.contentSubtype}"
+                this.preview = false
+                this.data = ExposedBlob(partData.provider().readBuffer.readByteArray())
+                this.community = entity
+            } else {
+                throw IllegalArgumentException("Wrong file content type")
+            }
         } else {
             throw IllegalArgumentException("Part data is not FileItem")
         }
@@ -398,7 +414,7 @@ class CommunityImageEntity(id: EntityID<UUID>) : UUIDEntity(id), Uploader<Commun
     }
 }
 
-class PublicationEntity(id: EntityID<UUID>) : UUIDEntity(id), Creator<PublicationRequest>,
+class PublicationEntity(id: EntityID<UUID>) : UUIDEntity(id), Dao, Creator<PublicationRequest>,
     ResponseFactory<PublicationShortResponse, PublicationFullResponse> {
 
     companion object : UUIDEntityClass<PublicationEntity>(PublicationTable)
@@ -448,7 +464,7 @@ class PublicationEntity(id: EntityID<UUID>) : UUIDEntity(id), Creator<Publicatio
     }
 }
 
-class PublicationFileEntity(id: EntityID<UUID>) : UUIDEntity(id), Uploader<PublicationEntity> {
+class PublicationFileEntity(id: EntityID<UUID>) : UUIDEntity(id), Document, Uploader<PublicationEntity> {
     companion object : UUIDEntityClass<PublicationFileEntity>(PublicationFileTable)
 
     var name by PublicationFileTable.name
@@ -478,7 +494,7 @@ class PublicationFileEntity(id: EntityID<UUID>) : UUIDEntity(id), Uploader<Publi
     }
 }
 
-class PublicationImageEntity(id: EntityID<UUID>) : UUIDEntity(id), Uploader<PublicationEntity> {
+class PublicationImageEntity(id: EntityID<UUID>) : UUIDEntity(id), Document, Uploader<PublicationEntity> {
     companion object : UUIDEntityClass<PublicationImageEntity>(PublicationImageTable)
 
     var name by PublicationImageTable.name
@@ -491,11 +507,15 @@ class PublicationImageEntity(id: EntityID<UUID>) : UUIDEntity(id), Uploader<Publ
     @OptIn(InternalAPI::class)
     override fun upload(entity: PublicationEntity, partData: PartData) {
         if (partData is PartData.FileItem) {
-            this.name = partData.originalFileName!!
-            this.contentType = "${partData.contentType!!.contentType}/${partData.contentType!!.contentSubtype}"
-            this.preview = false
-            this.data = ExposedBlob(partData.provider().readBuffer.readByteArray())
-            this.publication = entity
+            if (partData.contentType!!.contentType.startsWith("image")) {
+                this.name = partData.originalFileName!!
+                this.contentType = "${partData.contentType!!.contentType}/${partData.contentType!!.contentSubtype}"
+                this.preview = false
+                this.data = ExposedBlob(partData.provider().readBuffer.readByteArray())
+                this.publication = entity
+            } else {
+                throw IllegalArgumentException("Wrong file content type")
+            }
         } else {
             throw IllegalArgumentException("Part data is not FileItem")
         }
@@ -511,7 +531,7 @@ class PublicationImageEntity(id: EntityID<UUID>) : UUIDEntity(id), Uploader<Publ
     }
 }
 
-class CommentEntity(id: EntityID<UUID>) : UUIDEntity(id), Creator<CommentRequest>,
+class CommentEntity(id: EntityID<UUID>) : UUIDEntity(id), Dao, Creator<CommentRequest>,
     ResponseFactory<CommentShortResponse, CommentFullResponse> {
 
     companion object : UUIDEntityClass<CommentEntity>(CommentTable)
@@ -556,7 +576,7 @@ class CommentEntity(id: EntityID<UUID>) : UUIDEntity(id), Creator<CommentRequest
     }
 }
 
-class CommentFileEntity(id: EntityID<UUID>) : UUIDEntity(id), Uploader<CommentEntity> {
+class CommentFileEntity(id: EntityID<UUID>) : UUIDEntity(id), Document, Uploader<CommentEntity> {
     companion object : UUIDEntityClass<CommentFileEntity>(CommentFileTable)
 
     var name by CommentFileTable.name
