@@ -7,6 +7,7 @@ import kotlinx.datetime.toKotlinLocalDateTime
 import kotlinx.io.readByteArray
 import org.burgas.database.*
 import org.burgas.dto.*
+import org.burgas.encryption.EncryptionManager
 import org.burgas.util.RegexUtil
 import org.jetbrains.exposed.dao.EntityClass
 import org.jetbrains.exposed.dao.UUIDEntity
@@ -262,7 +263,7 @@ class MessageEntity(id: EntityID<UUID>) : UUIDEntity(id), Dao, Creator<MessageRe
     override fun insert(request: MessageRequest) {
         this.chat = ChatEntity.findById(request.chatId!!)!!
         this.sender = IdentityEntity.findById(request.senderId!!)!!
-        this.text = request.text!!
+        this.text = EncryptionManager.encrypt(request.text!!)
         this.createdAt = LocalDateTime.now().toKotlinLocalDateTime()
     }
 
@@ -270,7 +271,7 @@ class MessageEntity(id: EntityID<UUID>) : UUIDEntity(id), Dao, Creator<MessageRe
         return MessageShortResponse(
             id = this.id.value,
             sender = this.sender?.toShortResponse(),
-            text = this.text,
+            text = EncryptionManager.decrypt(this.text),
             files = this.files.map { it.toFileResponse() },
             createdAt = this.createdAt.toJavaLocalDateTime()
                 .format(DateTimeFormatter.ofPattern("dd MMMM yyyy, hh:mm"))
@@ -282,7 +283,7 @@ class MessageEntity(id: EntityID<UUID>) : UUIDEntity(id), Dao, Creator<MessageRe
             id = this.id.value,
             chat = this.chat.toShortResponse(),
             sender = this.sender?.toShortResponse(),
-            text = this.text,
+            text = EncryptionManager.decrypt(this.text),
             files = this.files.map { it.toFileResponse() },
             createdAt = this.createdAt.toJavaLocalDateTime()
                 .format(DateTimeFormatter.ofPattern("dd MMMM yyyy, hh:mm"))
@@ -433,7 +434,7 @@ class PublicationEntity(id: EntityID<UUID>) : UUIDEntity(id), Dao, Creator<Publi
     override fun insert(request: PublicationRequest) {
         this.community = CommunityEntity.findById(request.communityId!!)!!
         this.sender = IdentityEntity.findById(request.senderId!!)!!
-        this.text = request.text!!
+        this.text = EncryptionManager.encrypt(request.text!!)
         this.createdAt = LocalDateTime.now().toKotlinLocalDateTime()
     }
 
@@ -441,7 +442,7 @@ class PublicationEntity(id: EntityID<UUID>) : UUIDEntity(id), Dao, Creator<Publi
         return PublicationShortResponse(
             id = this.id.value,
             sender = this.sender?.toShortResponse(),
-            text = this.text,
+            text = EncryptionManager.decrypt(this.text),
             images = this.images.map { it.toImageResponse() },
             files = this.files.map { it.toFileResponse() },
             createdAt = this.createdAt.toJavaLocalDateTime()
@@ -454,7 +455,7 @@ class PublicationEntity(id: EntityID<UUID>) : UUIDEntity(id), Dao, Creator<Publi
             id = this.id.value,
             community = this.community.toShortResponse(),
             sender = this.sender?.toShortResponse(),
-            text = this.text,
+            text = EncryptionManager.decrypt(this.text),
             images = this.images.map { it.toImageResponse() },
             files = this.files.map { it.toFileResponse() },
             comments = this.comments.map { it.toShortResponse() },
@@ -548,7 +549,7 @@ class CommentEntity(id: EntityID<UUID>) : UUIDEntity(id), Dao, Creator<CommentRe
     override fun insert(request: CommentRequest) {
         this.publication = PublicationEntity.findById(request.publicationId!!)!!
         this.sender = IdentityEntity.findById(request.senderId!!)!!
-        this.text = request.text!!
+        this.text = EncryptionManager.encrypt(request.text!!)
         this.createdAt = LocalDateTime.now().toKotlinLocalDateTime()
     }
 
@@ -556,7 +557,7 @@ class CommentEntity(id: EntityID<UUID>) : UUIDEntity(id), Dao, Creator<CommentRe
         return CommentShortResponse(
             id = this.id.value,
             sender = this.sender?.toShortResponse(),
-            text = this.text,
+            text = EncryptionManager.decrypt(this.text),
             files = this.files.map { it.toFileResponse() },
             createdAt = this.createdAt.toJavaLocalDateTime()
                 .format(DateTimeFormatter.ofPattern("dd MMMM yyyy, hh:mm"))
@@ -568,7 +569,7 @@ class CommentEntity(id: EntityID<UUID>) : UUIDEntity(id), Dao, Creator<CommentRe
             id = this.id.value,
             publication = this.publication.toShortResponse(),
             sender = this.sender?.toShortResponse(),
-            text = this.text,
+            text = EncryptionManager.decrypt(this.text),
             files = this.files.map { it.toFileResponse() },
             createdAt = this.createdAt.toJavaLocalDateTime()
                 .format(DateTimeFormatter.ofPattern("dd MMMM yyyy, hh:mm"))
