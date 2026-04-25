@@ -1,6 +1,7 @@
 package org.burgas.encryption
 
 import java.util.*
+import java.util.random.RandomGenerator
 import javax.crypto.Cipher
 import javax.crypto.spec.IvParameterSpec
 import javax.crypto.spec.SecretKeySpec
@@ -9,7 +10,9 @@ object EncryptionManager {
 
     private const val ALGORITHM = "AES/CBC/PKCS5Padding"
     private const val SECRET_KEY = "12345678901234567890123456789012"
-    private const val IV = "1234567890123456"
+    private val IV = RandomGenerator.getDefault()
+        .nextLong(1000000000000000, 9999999999999999)
+        .toString()
 
     fun encrypt(plainText: String): String {
         val keySpec = SecretKeySpec(SECRET_KEY.toByteArray(), "AES")
