@@ -19,7 +19,7 @@ import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransacti
 import java.sql.Connection
 import java.util.*
 
-class IdentityService : ListDao<IdentityShortResponse>, ReadDao<UUID, IdentityFullResponse>,
+class IdentityService : ListDao<IdentityShortResponse>, ReadDao<UUID, IdentityEntity, IdentityFullResponse>,
     DesignDao<UUID, IdentityRequest, IdentityFullResponse>, ModifyDao<IdentityRequest, IdentityFullResponse>,
     RedisCacheHandler<IdentityEntity> {
 
@@ -43,6 +43,13 @@ class IdentityService : ListDao<IdentityShortResponse>, ReadDao<UUID, IdentityFu
         }
     }
 
+    override suspend fun findEntity(id: UUID): IdentityEntity = newSuspendedTransaction(
+        db = DatabaseConnection.postgres, context = Dispatchers.Default, readOnly = true
+    ) {
+        IdentityEntity.findById(id)!!
+            .load(IdentityEntity::images, IdentityEntity::chats, IdentityEntity::communities)
+    }
+
     override suspend fun findAll(): List<IdentityShortResponse> = newSuspendedTransaction(
         db = DatabaseConnection.postgres, context = Dispatchers.Default, readOnly = true
     ) {
@@ -57,9 +64,7 @@ class IdentityService : ListDao<IdentityShortResponse>, ReadDao<UUID, IdentityFu
         if (redis.exists(identityKey)) {
             Json.decodeFromString<IdentityFullResponse>(redis.get(identityKey))
         } else {
-            val identityFullResponse = IdentityEntity.findById(id)!!
-                .load(IdentityEntity::images, IdentityEntity::chats, IdentityEntity::communities)
-                .toFullResponse()
+            val identityFullResponse = findEntity(id).toFullResponse()
             redis.set(identityKey, Json.encodeToString(identityFullResponse))
             identityFullResponse
         }
@@ -95,8 +100,7 @@ class IdentityService : ListDao<IdentityShortResponse>, ReadDao<UUID, IdentityFu
         context = Dispatchers.Default,
         transactionIsolation = Connection.TRANSACTION_READ_COMMITTED
     ) {
-        val identityEntity = IdentityEntity.findById(id)!!
-            .load(IdentityEntity::images, IdentityEntity::chats, IdentityEntity::communities)
+        val identityEntity = findEntity(id)
         handleCache(identityEntity)
         identityEntity.delete()
     }

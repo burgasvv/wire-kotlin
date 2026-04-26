@@ -1,8 +1,11 @@
 package org.burgas.service.contract
 
+import org.burgas.dao.Dao
 import org.burgas.dto.Response
 
-interface ReadDao<in ID, out F : Response> {
+interface ReadDao<in ID, out D : Dao, out F : Response> {
+
+    suspend fun findEntity(id: ID): D
 
     suspend fun findById(id: ID): F
 }
