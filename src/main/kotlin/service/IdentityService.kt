@@ -9,18 +9,18 @@ import org.burgas.database.DatabaseConnection
 import org.burgas.dto.IdentityFullResponse
 import org.burgas.dto.IdentityRequest
 import org.burgas.dto.IdentityShortResponse
-import org.burgas.service.contract.IDesign
-import org.burgas.service.contract.IList
-import org.burgas.service.contract.IModify
-import org.burgas.service.contract.IRead
+import org.burgas.service.contract.DesignDao
+import org.burgas.service.contract.ListDao
+import org.burgas.service.contract.ModifyDao
+import org.burgas.service.contract.ReadDao
 import org.jetbrains.exposed.dao.load
 import org.jetbrains.exposed.dao.with
 import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransaction
 import java.sql.Connection
 import java.util.*
 
-class IdentityService : IList<IdentityShortResponse>, IRead<UUID, IdentityFullResponse>,
-    IDesign<UUID, IdentityRequest, IdentityFullResponse>, IModify<IdentityRequest, IdentityFullResponse>,
+class IdentityService : ListDao<IdentityShortResponse>, ReadDao<UUID, IdentityFullResponse>,
+    DesignDao<UUID, IdentityRequest, IdentityFullResponse>, ModifyDao<IdentityRequest, IdentityFullResponse>,
     RedisCacheHandler<IdentityEntity> {
 
     override suspend fun handleCache(entity: IdentityEntity) {

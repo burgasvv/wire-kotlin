@@ -3,7 +3,7 @@ package org.burgas.service.contract
 import org.burgas.dto.Request
 import org.burgas.dto.Response
 
-interface IDesign<ID, in R : Request, out F : Response> {
+interface DesignDao<ID, in R : Request, out F : Response> {
 
     suspend fun create(request: R): F
 
