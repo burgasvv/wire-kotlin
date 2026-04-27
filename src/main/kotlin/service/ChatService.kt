@@ -118,6 +118,7 @@ class ChatService : ListDao<ChatShortResponse>, ReadDao<UUID, ChatEntity, ChatFu
         val chatEntity = findEntity(groupRequest.groupId)
         handleCache(chatEntity)
         val identityEntity = identityService.findEntity(groupRequest.applicantId)
+        identityService.handleCache(identityEntity)
         if (!chatEntity.identities.contains(identityEntity)) {
             chatEntity.identities = SizedCollection(chatEntity.identities + identityEntity)
         } else {
@@ -133,6 +134,7 @@ class ChatService : ListDao<ChatShortResponse>, ReadDao<UUID, ChatEntity, ChatFu
         val chatEntity = findEntity(groupRequest.groupId)
         handleCache(chatEntity)
         val identityEntity = identityService.findEntity(groupRequest.applicantId)
+        identityService.handleCache(identityEntity)
         if (chatEntity.identities.contains(identityEntity)) {
             chatEntity.identities = SizedCollection(chatEntity.identities - identityEntity)
         } else {
