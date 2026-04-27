@@ -1,8 +1,9 @@
 package org.burgas.service
 
-import io.ktor.http.content.*
+import io.ktor.http.content.MultiPartData
+import io.ktor.http.content.forEachPart
 import kotlinx.coroutines.Dispatchers
-import org.burgas.dao.IdentityImageEntity
+import org.burgas.dao.ChatImageEntity
 import org.burgas.database.DatabaseConnection
 import org.burgas.dto.DocumentRequest
 import org.burgas.service.document.DesignDocument
@@ -11,16 +12,16 @@ import org.burgas.service.document.ReadDocument
 import org.jetbrains.exposed.dao.load
 import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransaction
 import java.sql.Connection
-import java.util.*
+import java.util.UUID
 
-class IdentityImageService : ReadDocument<UUID, IdentityImageEntity>, DesignDocument, ModifyImage<IdentityImageEntity> {
+class ChatImageService : ReadDocument<UUID, ChatImageEntity>, DesignDocument, ModifyImage<ChatImageEntity> {
 
-    private val identityService = IdentityService()
+    private val chatService = ChatService()
 
-    override suspend fun findEntity(id: UUID): IdentityImageEntity = newSuspendedTransaction(
+    override suspend fun findEntity(id: UUID): ChatImageEntity = newSuspendedTransaction(
         db = DatabaseConnection.postgres, context = Dispatchers.Default, readOnly = true
     ) {
-        IdentityImageEntity.findById(id)!!.load(IdentityImageEntity::identity)
+        ChatImageEntity.findById(id)!!.load(ChatImageEntity::chat)
     }
 
     override suspend fun create(entityId: UUID, multiPartData: MultiPartData) = newSuspendedTransaction(
@@ -28,10 +29,10 @@ class IdentityImageService : ReadDocument<UUID, IdentityImageEntity>, DesignDocu
         context = Dispatchers.Default,
         transactionIsolation = Connection.TRANSACTION_READ_COMMITTED
     ) {
-        val identityEntity = identityService.findEntity(entityId)
-        identityService.handleCache(identityEntity)
+        val chatEntity = chatService.findEntity(entityId)
+        chatService.handleCache(chatEntity)
         multiPartData.forEachPart { partData ->
-            IdentityImageEntity.new { this.upload(identityEntity, partData) }
+            ChatImageEntity.new { this.upload(chatEntity, partData) }
         }
     }
 
@@ -40,32 +41,32 @@ class IdentityImageService : ReadDocument<UUID, IdentityImageEntity>, DesignDocu
         context = Dispatchers.Default,
         transactionIsolation = Connection.TRANSACTION_READ_COMMITTED
     ) {
-        val identityEntity = identityService.findEntity(entityId)
-        identityService.handleCache(identityEntity)
-        val images = identityEntity.images
+        val chatEntity = chatService.findEntity(entityId)
+        chatService.handleCache(chatEntity)
+        val images = chatEntity.images
         if (!images.empty()) {
-            images.forEach { identityImageEntity ->
-                if (documentRequest.documentIds.contains(identityImageEntity.id.value)) identityImageEntity.delete()
+            images.forEach { chatImageEntity ->
+                if (documentRequest.documentIds.contains(chatImageEntity.id.value)) chatImageEntity.delete()
             }
         } else {
-            throw IllegalArgumentException("Identity images empty")
+            throw IllegalArgumentException("Chat images empty")
         }
     }
 
-    override suspend fun makePreview(entityId: UUID, imageId: UUID): IdentityImageEntity = newSuspendedTransaction(
+    override suspend fun makePreview(entityId: UUID, imageId: UUID): ChatImageEntity = newSuspendedTransaction(
         db = DatabaseConnection.postgres,
         context = Dispatchers.Default,
         transactionIsolation = Connection.TRANSACTION_READ_COMMITTED
     ) {
-        val identityEntity = identityService.findEntity(entityId)
-        identityService.handleCache(identityEntity)
-        val images = identityEntity.images
+        val chatEntity = chatService.findEntity(entityId)
+        chatService.handleCache(chatEntity)
+        val images = chatEntity.images
         if (!images.empty()) {
             images.filter { it.preview }.forEach { it.preview = false }
-            val identityImageEntity = images.find { it.id.value == imageId }
-            if (identityImageEntity != null) {
-                identityImageEntity.preview = true
-                identityImageEntity
+            val chatImageEntity = images.find { it.id.value == imageId }
+            if (chatImageEntity != null) {
+                chatImageEntity.preview = true
+                chatImageEntity
             } else {
                 throw IllegalArgumentException("Image not belong to identity")
             }
