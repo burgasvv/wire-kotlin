@@ -29,6 +29,14 @@ data class DocumentRequest(
 )
 
 @Serializable
+data class GroupRequest(
+    @Serializable(with = UUIDSerializer::class)
+    val groupId: UUID,
+    @Serializable(with = UUIDSerializer::class)
+    val applicantId: UUID
+)
+
+@Serializable
 data class ImageResponse(
     @Serializable(with = UUIDSerializer::class)
     override val id: UUID? = null,

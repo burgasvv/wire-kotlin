@@ -9,19 +9,20 @@ import org.burgas.database.DatabaseConnection
 import org.burgas.dto.ChatFullResponse
 import org.burgas.dto.ChatRequest
 import org.burgas.dto.ChatShortResponse
-import org.burgas.service.dao.DesignDao
-import org.burgas.service.dao.ListDao
-import org.burgas.service.dao.ModifyDao
-import org.burgas.service.dao.ReadDao
+import org.burgas.dto.GroupRequest
+import org.burgas.service.dao.*
 import org.jetbrains.exposed.dao.load
 import org.jetbrains.exposed.dao.with
+import org.jetbrains.exposed.sql.SizedCollection
 import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransaction
 import java.sql.Connection
 import java.util.*
 
 class ChatService : ListDao<ChatShortResponse>, ReadDao<UUID, ChatEntity, ChatFullResponse>,
     DesignDao<UUID, ChatRequest, ChatFullResponse>, ModifyDao<ChatRequest, ChatFullResponse>,
-    RedisCacheHandler<ChatEntity> {
+    GroupHandler, RedisCacheHandler<ChatEntity> {
+
+    private val identityService = IdentityService()
 
     override suspend fun handleCache(entity: ChatEntity) {
         val redis = DatabaseConnection.redis
@@ -107,5 +108,35 @@ class ChatService : ListDao<ChatShortResponse>, ReadDao<UUID, ChatEntity, ChatFu
         val chatEntity = findEntity(id)
         handleCache(chatEntity)
         chatEntity.delete()
+    }
+
+    override suspend fun join(groupRequest: GroupRequest) = newSuspendedTransaction(
+        db = DatabaseConnection.postgres,
+        context = Dispatchers.Default,
+        transactionIsolation = Connection.TRANSACTION_READ_COMMITTED
+    ) {
+        val chatEntity = findEntity(groupRequest.groupId)
+        handleCache(chatEntity)
+        val identityEntity = identityService.findEntity(groupRequest.applicantId)
+        if (!chatEntity.identities.contains(identityEntity)) {
+            chatEntity.identities = SizedCollection(chatEntity.identities + identityEntity)
+        } else {
+            throw IllegalArgumentException("Applicant already in chat")
+        }
+    }
+
+    override suspend fun out(groupRequest: GroupRequest) = newSuspendedTransaction(
+        db = DatabaseConnection.postgres,
+        context = Dispatchers.Default,
+        transactionIsolation = Connection.TRANSACTION_READ_COMMITTED
+    ) {
+        val chatEntity = findEntity(groupRequest.groupId)
+        handleCache(chatEntity)
+        val identityEntity = identityService.findEntity(groupRequest.applicantId)
+        if (chatEntity.identities.contains(identityEntity)) {
+            chatEntity.identities = SizedCollection(chatEntity.identities - identityEntity)
+        } else {
+            throw IllegalArgumentException("Applicant not in chat")
+        }
     }
 }
