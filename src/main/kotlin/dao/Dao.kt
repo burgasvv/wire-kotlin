@@ -22,6 +22,8 @@ import java.util.*
 
 interface Dao
 
+interface Image
+
 interface Document
 
 interface Uploader<in E : Dao> {
@@ -114,7 +116,7 @@ class IdentityEntity(id: EntityID<UUID>) : UUIDEntity(id), Dao, Creator<Identity
     }
 }
 
-class IdentityImageEntity(id: EntityID<UUID>) : UUIDEntity(id), Document, Uploader<IdentityEntity> {
+class IdentityImageEntity(id: EntityID<UUID>) : UUIDEntity(id), Document, Image, Uploader<IdentityEntity> {
     companion object : UUIDEntityClass<IdentityImageEntity>(IdentityImageTable)
 
     var name by IdentityImageTable.name
@@ -123,6 +125,7 @@ class IdentityImageEntity(id: EntityID<UUID>) : UUIDEntity(id), Document, Upload
     var data by IdentityImageTable.data
 
     var identity by IdentityEntity referencedOn IdentityImageTable.identityId
+
 
     @OptIn(InternalAPI::class)
     override fun upload(entity: IdentityEntity, partData: PartData) {
@@ -210,7 +213,7 @@ class ChatEntity(id: EntityID<UUID>) : UUIDEntity(id), Dao, Creator<ChatRequest>
     }
 }
 
-class ChatImageEntity(id: EntityID<UUID>) : UUIDEntity(id), Document, Uploader<ChatEntity> {
+class ChatImageEntity(id: EntityID<UUID>) : UUIDEntity(id), Document, Image, Uploader<ChatEntity> {
     companion object : UUIDEntityClass<ChatImageEntity>(ChatImageTable)
 
     var name by ChatImageTable.name
@@ -378,7 +381,7 @@ class CommunityEntity(id: EntityID<UUID>) : UUIDEntity(id), Dao, Creator<Communi
     }
 }
 
-class CommunityImageEntity(id: EntityID<UUID>) : UUIDEntity(id), Document, Uploader<CommunityEntity> {
+class CommunityImageEntity(id: EntityID<UUID>) : UUIDEntity(id), Document, Image, Uploader<CommunityEntity> {
     companion object : UUIDEntityClass<CommunityImageEntity>(CommunityImageTable)
 
     var name by CommunityImageTable.name
@@ -495,7 +498,7 @@ class PublicationFileEntity(id: EntityID<UUID>) : UUIDEntity(id), Document, Uplo
     }
 }
 
-class PublicationImageEntity(id: EntityID<UUID>) : UUIDEntity(id), Document, Uploader<PublicationEntity> {
+class PublicationImageEntity(id: EntityID<UUID>) : UUIDEntity(id), Document, Image, Uploader<PublicationEntity> {
     companion object : UUIDEntityClass<PublicationImageEntity>(PublicationImageTable)
 
     var name by PublicationImageTable.name

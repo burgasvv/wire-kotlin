@@ -24,6 +24,11 @@ data class ExceptionResponse(
 )
 
 @Serializable
+data class DocumentRequest(
+    val documentIds: List<@Serializable(with = UUIDSerializer::class) UUID>
+)
+
+@Serializable
 data class ImageResponse(
     @Serializable(with = UUIDSerializer::class)
     override val id: UUID? = null,

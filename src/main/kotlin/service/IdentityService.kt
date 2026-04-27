@@ -9,10 +9,10 @@ import org.burgas.database.DatabaseConnection
 import org.burgas.dto.IdentityFullResponse
 import org.burgas.dto.IdentityRequest
 import org.burgas.dto.IdentityShortResponse
-import org.burgas.service.contract.DesignDao
-import org.burgas.service.contract.ListDao
-import org.burgas.service.contract.ModifyDao
-import org.burgas.service.contract.ReadDao
+import org.burgas.service.dao.DesignDao
+import org.burgas.service.dao.ListDao
+import org.burgas.service.dao.ModifyDao
+import org.burgas.service.dao.ReadDao
 import org.jetbrains.exposed.dao.load
 import org.jetbrains.exposed.dao.with
 import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransaction
@@ -34,7 +34,6 @@ class IdentityService : ListDao<IdentityShortResponse>, ReadDao<UUID, IdentityEn
                 if (redis.exists(chatKey)) redis.del(chatKey)
             }
         }
-
         if (!entity.communities.empty()) {
             entity.communities.forEach { communityEntity ->
                 val communityKey = CacheKey.COMMUNITY_KEY.format(communityEntity.id.value)

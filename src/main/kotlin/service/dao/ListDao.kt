@@ -1,4 +1,4 @@
-package org.burgas.service.contract
+package org.burgas.service.dao
 
 import org.burgas.dto.Response
 
