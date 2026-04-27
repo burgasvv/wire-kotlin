@@ -5,6 +5,7 @@ import io.ktor.utils.io.*
 import kotlinx.datetime.toJavaLocalDateTime
 import kotlinx.datetime.toKotlinLocalDateTime
 import kotlinx.io.readByteArray
+import kotlinx.serialization.json.Json
 import org.burgas.database.*
 import org.burgas.dto.*
 import org.burgas.encryption.EncryptionManager
@@ -32,6 +33,10 @@ interface Uploader<in E : Dao> {
 
 interface Creator<in R : Request> {
     fun insert(request: R)
+}
+
+interface CreatorPart {
+    fun insert(partData: PartData)
 }
 
 interface Editor<in R : Request> {
@@ -250,7 +255,7 @@ class ChatImageEntity(id: EntityID<UUID>) : UUIDEntity(id), Document, Image, Upl
     }
 }
 
-class MessageEntity(id: EntityID<UUID>) : UUIDEntity(id), Dao, Creator<MessageRequest>,
+class MessageEntity(id: EntityID<UUID>) : UUIDEntity(id), Dao, CreatorPart,
     ResponseFactory<MessageShortResponse, MessageFullResponse> {
 
     companion object : UUIDEntityClass<MessageEntity>(MessageTable)
@@ -263,11 +268,24 @@ class MessageEntity(id: EntityID<UUID>) : UUIDEntity(id), Dao, Creator<MessageRe
 
     var createdAt by MessageTable.createdAt
 
-    override fun insert(request: MessageRequest) {
-        this.chat = ChatEntity.findById(request.chatId!!)!!
-        this.sender = IdentityEntity.findById(request.senderId!!)!!
-        this.text = EncryptionManager.encrypt(request.text!!)
-        this.createdAt = LocalDateTime.now().toKotlinLocalDateTime()
+    override fun insert(partData: PartData) {
+        if (partData is PartData.FormItem) {
+            if (partData.name == "messageRequest") {
+                val request = Json.decodeFromString<MessageRequest>(partData.value)
+                val chatEntity = ChatEntity.findById(request.chatId!!)!!
+                val identityEntity = IdentityEntity.findById(request.senderId!!)!!
+                if (chatEntity.identities.contains(identityEntity)) {
+                    this.chat = chatEntity
+                    this.sender = identityEntity
+                } else {
+                    throw IllegalArgumentException("This sender can't send messages to this chat")
+                }
+                this.text = EncryptionManager.encrypt(request.text!!)
+                this.createdAt = LocalDateTime.now().toKotlinLocalDateTime()
+            }
+        } else {
+            throw IllegalArgumentException("part data is not form item")
+        }
     }
 
     override fun toShortResponse(): MessageShortResponse {
@@ -435,8 +453,14 @@ class PublicationEntity(id: EntityID<UUID>) : UUIDEntity(id), Dao, Creator<Publi
     var createdAt by PublicationTable.createdAt
 
     override fun insert(request: PublicationRequest) {
-        this.community = CommunityEntity.findById(request.communityId!!)!!
-        this.sender = IdentityEntity.findById(request.senderId!!)!!
+        val communityEntity = CommunityEntity.findById(request.communityId!!)!!
+        val identityEntity = IdentityEntity.findById(request.senderId!!)!!
+        if (communityEntity.admin == identityEntity) {
+            this.community = communityEntity
+            this.sender = identityEntity
+        } else {
+            throw IllegalArgumentException("Only admin can send publications")
+        }
         this.text = EncryptionManager.encrypt(request.text!!)
         this.createdAt = LocalDateTime.now().toKotlinLocalDateTime()
     }
@@ -550,8 +574,14 @@ class CommentEntity(id: EntityID<UUID>) : UUIDEntity(id), Dao, Creator<CommentRe
     var createdAt by CommentTable.createdAt
 
     override fun insert(request: CommentRequest) {
-        this.publication = PublicationEntity.findById(request.publicationId!!)!!
-        this.sender = IdentityEntity.findById(request.senderId!!)!!
+        val publicationEntity = PublicationEntity.findById(request.publicationId!!)!!
+        val identityEntity = IdentityEntity.findById(request.senderId!!)!!
+        if (publicationEntity.community.identities.contains(identityEntity)) {
+            this.publication = publicationEntity
+            this.sender = identityEntity
+        } else {
+            throw IllegalArgumentException("This sender can't send comments to this publication and community")
+        }
         this.text = EncryptionManager.encrypt(request.text!!)
         this.createdAt = LocalDateTime.now().toKotlinLocalDateTime()
     }
