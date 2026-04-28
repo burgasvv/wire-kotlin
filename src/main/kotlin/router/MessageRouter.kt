@@ -1,18 +1,14 @@
 package org.burgas.router
 
 import io.ktor.http.*
-import io.ktor.http.content.*
 import io.ktor.server.application.*
 import io.ktor.server.auth.*
 import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import kotlinx.coroutines.Dispatchers
-import kotlinx.serialization.json.Json
-import org.burgas.dao.IdentityEntity
 import org.burgas.dao.MessageEntity
 import org.burgas.database.DatabaseConnection
-import org.burgas.dto.MessageRequest
 import org.burgas.service.MessageService
 import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransaction
 import java.util.*
