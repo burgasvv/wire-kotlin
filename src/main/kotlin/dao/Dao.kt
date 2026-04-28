@@ -272,21 +272,26 @@ class MessageEntity(id: EntityID<UUID>) : UUIDEntity(id), Dao, CreatorPart,
 
     override fun insert(partData: PartData) {
         if (partData is PartData.FormItem) {
+
             if (partData.name == "messageRequest") {
                 val request = Json.decodeFromString<MessageRequest>(partData.value)
                 val chatEntity = ChatEntity.findById(request.chatId!!)!!
                 val identityEntity = IdentityEntity.findById(request.senderId!!)!!
+
                 if (chatEntity.identities.contains(identityEntity)) {
                     this.chat = chatEntity
                     this.sender = identityEntity
                 } else {
                     throw IllegalArgumentException("This sender can't send messages to this chat")
                 }
+
                 this.text = EncryptionManager.encrypt(request.text!!)
                 this.createdAt = LocalDateTime.now().toKotlinLocalDateTime()
+            } else {
+                throw IllegalArgumentException("Wrong part data name")
             }
         } else {
-            throw IllegalArgumentException("part data is not form item")
+            throw IllegalArgumentException("Part data is not form item")
         }
     }
 
@@ -442,7 +447,7 @@ class CommunityImageEntity(id: EntityID<UUID>) : UUIDEntity(id), Document, Image
     }
 }
 
-class PublicationEntity(id: EntityID<UUID>) : UUIDEntity(id), Dao, Creator<PublicationRequest>,
+class PublicationEntity(id: EntityID<UUID>) : UUIDEntity(id), Dao, CreatorPart,
     ResponseFactory<PublicationShortResponse, PublicationFullResponse> {
 
     companion object : UUIDEntityClass<PublicationEntity>(PublicationTable)
@@ -458,17 +463,30 @@ class PublicationEntity(id: EntityID<UUID>) : UUIDEntity(id), Dao, Creator<Publi
 
     var createdAt by PublicationTable.createdAt
 
-    override fun insert(request: PublicationRequest) {
-        val communityEntity = CommunityEntity.findById(request.communityId!!)!!
-        val identityEntity = IdentityEntity.findById(request.senderId!!)!!
-        if (communityEntity.admin == identityEntity) {
-            this.community = communityEntity
-            this.sender = identityEntity
+    override fun insert(partData: PartData) {
+        if (partData is PartData.FormItem) {
+
+            if (partData.name == "publicationRequest") {
+                val request = Json.decodeFromString<PublicationRequest>(partData.value)
+                val communityEntity = CommunityEntity.findById(request.communityId!!)!!
+                val identityEntity = IdentityEntity.findById(request.senderId!!)!!
+
+                if (communityEntity.admin == identityEntity) {
+                    this.community = communityEntity
+                    this.sender = identityEntity
+                } else {
+                    throw IllegalArgumentException("Only admin can send publications")
+                }
+
+                this.text = EncryptionManager.encrypt(request.text!!)
+                this.createdAt = LocalDateTime.now().toKotlinLocalDateTime()
+
+            } else {
+                throw IllegalArgumentException("Wrong part data name")
+            }
         } else {
-            throw IllegalArgumentException("Only admin can send publications")
+            throw IllegalArgumentException("Part data is not form item")
         }
-        this.text = EncryptionManager.encrypt(request.text!!)
-        this.createdAt = LocalDateTime.now().toKotlinLocalDateTime()
     }
 
     override fun toShortResponse(): PublicationShortResponse {
@@ -565,7 +583,7 @@ class PublicationImageEntity(id: EntityID<UUID>) : UUIDEntity(id), Document, Ima
     }
 }
 
-class CommentEntity(id: EntityID<UUID>) : UUIDEntity(id), Dao, Creator<CommentRequest>,
+class CommentEntity(id: EntityID<UUID>) : UUIDEntity(id), Dao, CreatorPart,
     ResponseFactory<CommentShortResponse, CommentFullResponse> {
 
     companion object : UUIDEntityClass<CommentEntity>(CommentTable)
@@ -579,17 +597,30 @@ class CommentEntity(id: EntityID<UUID>) : UUIDEntity(id), Dao, Creator<CommentRe
 
     var createdAt by CommentTable.createdAt
 
-    override fun insert(request: CommentRequest) {
-        val publicationEntity = PublicationEntity.findById(request.publicationId!!)!!
-        val identityEntity = IdentityEntity.findById(request.senderId!!)!!
-        if (publicationEntity.community.identities.contains(identityEntity)) {
-            this.publication = publicationEntity
-            this.sender = identityEntity
+    override fun insert(partData: PartData) {
+        if (partData is PartData.FormItem) {
+
+            if (partData.name == "commentRequest") {
+                val request = Json.decodeFromString<CommentRequest>(partData.value)
+                val publicationEntity = PublicationEntity.findById(request.publicationId!!)!!
+                val identityEntity = IdentityEntity.findById(request.senderId!!)!!
+
+                if (publicationEntity.community.identities.contains(identityEntity)) {
+                    this.publication = publicationEntity
+                    this.sender = identityEntity
+                } else {
+                    throw IllegalArgumentException("This sender can't send comments to this publication and community")
+                }
+
+                this.text = EncryptionManager.encrypt(request.text!!)
+                this.createdAt = LocalDateTime.now().toKotlinLocalDateTime()
+
+            } else {
+                throw IllegalArgumentException("Wrong part data name")
+            }
         } else {
-            throw IllegalArgumentException("This sender can't send comments to this publication and community")
+            throw IllegalArgumentException("Part data is not form item")
         }
-        this.text = EncryptionManager.encrypt(request.text!!)
-        this.createdAt = LocalDateTime.now().toKotlinLocalDateTime()
     }
 
     override fun toShortResponse(): CommentShortResponse {
