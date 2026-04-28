@@ -9,3 +9,148 @@
 GET /api/v1/security/csrf-token
 Host: localhost:9000
 Accept: application/json
+
+
+
+### Identity Requests
+
+
+
+###
+POST /api/v1/identities/create
+Host: localhost:9000
+Accept: application/json
+Content-Type: application/json
+Origin: http://localhost:9000
+X-Csrf-Token: 6a9445b9-c480-490c-9b86-3c2869dd8a67
+
+{
+    "authority": "ADMIN",
+    "username": "burgvv",
+    "password": "burgasvv",
+    "email": "burgasvv@gmail.com",
+    "status": true,
+    "firstname": "Бургас",
+    "lastname": "Вячеслав",
+    "patronymic": "Васильевич"
+}
+
+###
+POST /api/v1/identities/update
+Host: localhost:9000
+Accept: application/json
+Content-Type: application/json
+Origin: http://localhost:9000
+X-Csrf-Token: 6a9445b9-c480-490c-9b86-3c2869dd8a67
+Authorization: Basic burgasvv@gmail.com burgasvv
+
+{
+    "id": "b7ecf544-3fbc-4087-893a-16b69f8ce0a7",
+    "username": "burgasvv"
+}
+
+###
+POST /api/v1/identities/create
+Host: localhost:9000
+Accept: application/json
+Content-Type: application/json
+Origin: http://localhost:9000
+X-Csrf-Token: 6a9445b9-c480-490c-9b86-3c2869dd8a67
+
+{
+    "authority": "USER",
+    "username": "zagor",
+    "password": "zagor",
+    "email": "zagor@gmail.com",
+    "status": true,
+    "firstname": "Загорулько",
+    "lastname": "Борис",
+    "patronymic": "Юрьевич"
+}
+
+###
+GET /api/v1/identities/by-id?identityId=b7ecf544-3fbc-4087-893a-16b69f8ce0a7
+Host: localhost:9000
+Accept: application/json
+
+###
+GET /api/v1/identities
+Host: localhost:9000
+Accept: application/json
+Authorization: Basic burgasvv@gmail.com burgasvv
+
+###
+POST /api/v1/identities/change-password
+Host: localhost:9000
+Accept: application/json
+Content-Type: application/json
+Origin: http://localhost:9000
+X-Csrf-Token: 6a9445b9-c480-490c-9b86-3c2869dd8a67
+Authorization: Basic burgasvv@gmail.com burgasvv111
+
+{
+    "id": "b7ecf544-3fbc-4087-893a-16b69f8ce0a7",
+    "password": "burgasvv"
+}
+
+###
+POST /api/v1/identities/change-status
+Host: localhost:9000
+Accept: application/json
+Content-Type: application/json
+Origin: http://localhost:9000
+X-Csrf-Token: 6a9445b9-c480-490c-9b86-3c2869dd8a67
+Authorization: Basic burgasvv@gmail.com burgasvv
+
+{
+    "id": "e9112e2c-0de3-4f6b-8eff-4027220c611c",
+    "status": true
+}
+
+###
+DELETE /api/v1/identities/delete?identityId=e9112e2c-0de3-4f6b-8eff-4027220c611c
+Host: localhost:9000
+Accept: application/json
+Origin: http://localhost:9000
+X-Csrf-Token: 6a9445b9-c480-490c-9b86-3c2869dd8a67
+Authorization: Basic zagor@gmail.com zagor
+
+
+
+### Identity-Image Requests
+
+
+
+###
+GET /api/v1/identity-images/by-id?imageId=dc2336f6-ce1f-449e-a9b8-f98056fcfbdf
+Host: localhost:9000
+Accept: application/json
+
+###
+DELETE /api/v1/identity-images/delete?identityId=b7ecf544-3fbc-4087-893a-16b69f8ce0a7
+Host: localhost:9000
+Accept: application/json
+Content-Type: application/json
+Origin: http://localhost:9000
+X-Csrf-Token: 6a9445b9-c480-490c-9b86-3c2869dd8a67
+Authorization: Basic burgasvv@gmail.com burgasvv
+
+{
+    "documentIds": [
+        "dc2336f6-ce1f-449e-a9b8-f98056fcfbdf"
+    ]
+}
+
+###
+POST /api/v1/identity-images/make-preview
+Host: localhost:9000
+Accept: application/json
+Content-Type: application/json
+Origin: http://localhost:9000
+X-Csrf-Token: 6a9445b9-c480-490c-9b86-3c2869dd8a67
+Authorization: Basic burgasvv@gmail.com burgasvv
+
+{
+    "entityId": "b7ecf544-3fbc-4087-893a-16b69f8ce0a7",
+    "imageId": "0414b3c4-418c-430b-8855-8ee763868ae0"
+}

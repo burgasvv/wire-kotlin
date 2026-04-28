@@ -5,6 +5,7 @@ import kotlinx.coroutines.Dispatchers
 import org.burgas.dao.CommunityImageEntity
 import org.burgas.database.DatabaseConnection
 import org.burgas.dto.DocumentRequest
+import org.burgas.dto.ImageRequest
 import org.burgas.service.document.DesignDocument
 import org.burgas.service.document.ModifyImage
 import org.burgas.service.document.ReadDocument
@@ -53,17 +54,17 @@ class CommunityImageService : ReadDocument<UUID, CommunityImageEntity>,
         }
     }
 
-    override suspend fun makePreview(entityId: UUID, imageId: UUID): CommunityImageEntity = newSuspendedTransaction(
+    override suspend fun makePreview(imageRequest: ImageRequest): CommunityImageEntity = newSuspendedTransaction(
         db = DatabaseConnection.postgres,
         context = Dispatchers.Default,
         transactionIsolation = Connection.TRANSACTION_READ_COMMITTED
     ) {
-        val communityEntity = communityService.findEntity(entityId)
+        val communityEntity = communityService.findEntity(imageRequest.entityId)
         communityService.handleCache(communityEntity)
         val images = communityEntity.images
         if (!images.empty()) {
             images.filter { it.preview }.forEach { it.preview = false }
-            val communityImageEntity = images.find { it.id.value == imageId }
+            val communityImageEntity = images.find { it.id.value == imageRequest.imageId }
             if (communityImageEntity != null) {
                 communityImageEntity.preview = true
                 communityImageEntity
