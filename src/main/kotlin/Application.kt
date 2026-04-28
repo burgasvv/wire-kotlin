@@ -2,6 +2,7 @@ package org.burgas
 
 import io.ktor.server.application.*
 import org.burgas.database.configureDatabase
+import org.burgas.router.configureChatRouter
 import org.burgas.router.configureIdentityImageRouter
 import org.burgas.router.configureIdentityRouter
 import org.burgas.router.configureSecurityRouter
@@ -20,4 +21,5 @@ fun Application.module() {
     configureSecurityRouter()
     configureIdentityRouter()
     configureIdentityImageRouter()
+    configureChatRouter()
 }

@@ -8,20 +8,23 @@ import org.burgas.dao.CommunityEntity
 import org.burgas.database.DatabaseConnection
 import org.burgas.dto.CommunityFullResponse
 import org.burgas.dto.CommunityRequest
+import org.burgas.dto.CommunityShortResponse
 import org.burgas.dto.GroupRequest
 import org.burgas.service.dao.DesignDao
 import org.burgas.service.dao.GroupHandler
+import org.burgas.service.dao.ListDao
 import org.burgas.service.dao.ModifyDao
 import org.burgas.service.dao.ReadDao
 import org.jetbrains.exposed.dao.load
+import org.jetbrains.exposed.dao.with
 import org.jetbrains.exposed.sql.SizedCollection
 import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransaction
 import java.sql.Connection
 import java.util.*
 
-class CommunityService : ReadDao<UUID, CommunityEntity, CommunityFullResponse>,
+class CommunityService : ListDao<CommunityShortResponse>, ReadDao<UUID, CommunityEntity, CommunityFullResponse>,
     DesignDao<UUID, CommunityRequest, CommunityFullResponse>, ModifyDao<CommunityRequest, CommunityFullResponse>,
-    GroupHandler, RedisCacheHandler<CommunityEntity> {
+    GroupHandler<CommunityEntity>, RedisCacheHandler<CommunityEntity> {
 
     private val identityService = IdentityService()
 
@@ -49,6 +52,13 @@ class CommunityService : ReadDao<UUID, CommunityEntity, CommunityFullResponse>,
                 if (redis.exists(publicationKey)) redis.del(publicationKey)
             }
         }
+    }
+
+    override suspend fun findAll(): List<CommunityShortResponse> = newSuspendedTransaction(
+        db = DatabaseConnection.postgres, context = Dispatchers.Default, readOnly = true
+    ) {
+        CommunityEntity.all().with(CommunityEntity::admin, CommunityEntity::images)
+            .map { it.toShortResponse() }
     }
 
     override suspend fun findEntity(id: UUID): CommunityEntity = newSuspendedTransaction(
@@ -122,7 +132,7 @@ class CommunityService : ReadDao<UUID, CommunityEntity, CommunityFullResponse>,
         communityEntity.delete()
     }
 
-    override suspend fun join(groupRequest: GroupRequest) = newSuspendedTransaction(
+    override suspend fun join(groupRequest: GroupRequest): CommunityEntity = newSuspendedTransaction(
         db = DatabaseConnection.postgres,
         context = Dispatchers.Default,
         transactionIsolation = Connection.TRANSACTION_READ_COMMITTED
@@ -133,12 +143,13 @@ class CommunityService : ReadDao<UUID, CommunityEntity, CommunityFullResponse>,
         identityService.handleCache(identityEntity)
         if (!communityEntity.identities.contains(identityEntity)) {
             communityEntity.identities = SizedCollection(communityEntity.identities + identityEntity)
+            communityEntity
         } else {
             throw IllegalArgumentException("Applicant already in community")
         }
     }
 
-    override suspend fun out(groupRequest: GroupRequest) = newSuspendedTransaction(
+    override suspend fun out(groupRequest: GroupRequest): CommunityEntity = newSuspendedTransaction(
         db = DatabaseConnection.postgres,
         context = Dispatchers.Default,
         transactionIsolation = Connection.TRANSACTION_READ_COMMITTED
@@ -149,6 +160,7 @@ class CommunityService : ReadDao<UUID, CommunityEntity, CommunityFullResponse>,
         identityService.handleCache(identityEntity)
         if (communityEntity.identities.contains(identityEntity)) {
             communityEntity.identities = SizedCollection(communityEntity.identities - identityEntity)
+            communityEntity
         } else {
             throw IllegalArgumentException("Applicant not in community")
         }

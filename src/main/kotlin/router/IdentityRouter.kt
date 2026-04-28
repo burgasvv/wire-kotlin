@@ -6,13 +6,9 @@ import io.ktor.server.auth.*
 import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
-import io.ktor.util.AttributeKey
-import kotlinx.coroutines.Dispatchers
-import org.burgas.dao.IdentityEntity
-import org.burgas.database.DatabaseConnection
+import io.ktor.util.*
 import org.burgas.dto.IdentityRequest
 import org.burgas.service.IdentityService
-import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransaction
 import java.util.*
 
 fun Application.configureIdentityRouter() {
@@ -28,11 +24,7 @@ fun Application.configureIdentityRouter() {
                 val principal = call.principal<UserPasswordCredential>()!!
                 val identityId = UUID.fromString(call.parameters["identityId"])
 
-                val identityEntity = newSuspendedTransaction(
-                    db = DatabaseConnection.postgres, context = Dispatchers.Default, readOnly = true
-                ) {
-                    IdentityEntity.findById(identityId)!!
-                }
+                val identityEntity = identityService.findEntity(identityId)
                 if (identityEntity.email == principal.name) {
                     proceed()
                 } else {
@@ -46,11 +38,7 @@ fun Application.configureIdentityRouter() {
                 val identityRequest = call.receive(IdentityRequest::class)
                 val identityId = identityRequest.id!!
 
-                val identityEntity = newSuspendedTransaction(
-                    db = DatabaseConnection.postgres, context = Dispatchers.Default, readOnly = true
-                ) {
-                    IdentityEntity.findById(identityId)!!
-                }
+                val identityEntity = identityService.findEntity(identityId)
                 if (identityEntity.email == principal.name) {
                     call.attributes[AttributeKey<IdentityRequest>("identityRequest")] = identityRequest
                     proceed()

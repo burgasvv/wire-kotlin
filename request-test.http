@@ -154,3 +154,77 @@ Authorization: Basic burgasvv@gmail.com burgasvv
     "entityId": "b7ecf544-3fbc-4087-893a-16b69f8ce0a7",
     "imageId": "0414b3c4-418c-430b-8855-8ee763868ae0"
 }
+
+
+
+### Chat Requests
+
+
+
+###
+POST /api/v1/chats/create
+Host: localhost:9000
+Accept: application/json
+Content-Type: application/json
+Origin: http://localhost:9000
+X-Csrf-Token: 6a9445b9-c480-490c-9b86-3c2869dd8a67
+Authorization: Basic burgasvv@gmail.com burgasvv
+
+{
+    "name": "Eltex Group",
+    "description": "Описание чата и содержимого Eltex Group",
+    "adminId": "b7ecf544-3fbc-4087-893a-16b69f8ce0a7"
+}
+
+###
+POST /api/v1/chats/update
+Host: localhost:9000
+Accept: application/json
+Content-Type: application/json
+Origin: http://localhost:9000
+X-Csrf-Token: 6a9445b9-c480-490c-9b86-3c2869dd8a67
+Authorization: Basic burgasvv@gmail.com burgasvv
+
+{
+    "id": "267ac6cc-da06-43b6-b372-9998952c16ba",
+    "name": "Eltex Group Chat"
+}
+
+###
+POST /api/v1/chats/join
+Host: localhost:9000
+Accept: application/json
+Content-Type: application/json
+Origin: http://localhost:9000
+X-Csrf-Token: 6a9445b9-c480-490c-9b86-3c2869dd8a67
+Authorization: Basic zagor@gmail.com zagor
+
+{
+    "groupId": "267ac6cc-da06-43b6-b372-9998952c16ba",
+    "applicantId": "0be23cf2-1d4a-4f9d-a938-183b22078fd2"
+}
+
+###
+POST /api/v1/chats/out
+Host: localhost:9000
+Accept: application/json
+Content-Type: application/json
+Origin: http://localhost:9000
+X-Csrf-Token: 6a9445b9-c480-490c-9b86-3c2869dd8a67
+Authorization: Basic zagor@gmail.com zagor
+
+{
+    "groupId": "267ac6cc-da06-43b6-b372-9998952c16ba",
+    "applicantId": "0be23cf2-1d4a-4f9d-a938-183b22078fd2"
+}
+
+###
+GET /api/v1/chats/by-id?chatId=267ac6cc-da06-43b6-b372-9998952c16ba
+Host: localhost:9000
+Accept: application/json
+
+###
+GET /api/v1/chats
+Host: localhost:9000
+Accept: application/json
+Authorization: Basic burgasvv@gmail.com burgasvv

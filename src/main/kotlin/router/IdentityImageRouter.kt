@@ -6,18 +6,16 @@ import io.ktor.server.auth.*
 import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
-import io.ktor.util.AttributeKey
-import kotlinx.coroutines.Dispatchers
-import org.burgas.dao.IdentityEntity
-import org.burgas.database.DatabaseConnection
+import io.ktor.util.*
 import org.burgas.dto.DocumentRequest
 import org.burgas.dto.ImageRequest
 import org.burgas.service.IdentityImageService
-import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransaction
+import org.burgas.service.IdentityService
 import java.util.*
 
 fun Application.configureIdentityImageRouter() {
 
+    val identityService = IdentityService()
     val identityImageService = IdentityImageService()
 
     routing {
@@ -31,11 +29,7 @@ fun Application.configureIdentityImageRouter() {
                 val principal = call.principal<UserPasswordCredential>()!!
                 val identityId = UUID.fromString(call.parameters["identityId"])
 
-                val identityEntity = newSuspendedTransaction(
-                    db = DatabaseConnection.postgres, context = Dispatchers.Default, readOnly = true
-                ) {
-                    IdentityEntity.findById(identityId)!!
-                }
+                val identityEntity = identityService.findEntity(identityId)
                 if (identityEntity.email == principal.name) {
                     proceed()
                 } else {
@@ -47,16 +41,12 @@ fun Application.configureIdentityImageRouter() {
                 val imageRequest = call.receive(ImageRequest::class)
                 val identityId = imageRequest.entityId
 
-                newSuspendedTransaction(
-                    db = DatabaseConnection.postgres, context = Dispatchers.Default, readOnly = true
-                ) {
-                    val identityEntity = IdentityEntity.findById(identityId)!!
-                    if (identityEntity.email == principal.name) {
-                        call.attributes[AttributeKey<ImageRequest>("imageRequest")] = imageRequest
-                        proceed()
-                    } else {
-                        throw IllegalArgumentException("Identity not authorized")
-                    }
+                val identityEntity = identityService.findEntity(identityId)
+                if (identityEntity.email == principal.name) {
+                    call.attributes[AttributeKey<ImageRequest>("imageRequest")] = imageRequest
+                    proceed()
+                } else {
+                    throw IllegalArgumentException("Identity not authorized")
                 }
 
             } else {
@@ -92,8 +82,8 @@ fun Application.configureIdentityImageRouter() {
 
                 post("/make-preview") {
                     val imageRequest = call.attributes[AttributeKey<ImageRequest>("imageRequest")]
-                    val identityImageEntity = identityImageService.makePreview(imageRequest)
-                    call.respondRedirect("/api/v1/identities/by-id?identityId=${identityImageEntity.identity.id.value}")
+                    identityImageService.makePreview(imageRequest)
+                    call.respond(HttpStatusCode.OK)
                 }
             }
         }

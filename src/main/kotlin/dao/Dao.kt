@@ -186,11 +186,7 @@ class ChatEntity(id: EntityID<UUID>) : UUIDEntity(id), Dao, Creator<ChatRequest>
         this.name = request.name ?: this.name
         this.description = request.description ?: this.description
         val applicant = IdentityEntity.findById(request.adminId ?: UUID(0, 0))
-        if (applicant != null && this.identities.contains(applicant)) {
-            this.admin = applicant
-        } else {
-            throw IllegalArgumentException("This identity not in chat and can't be admin")
-        }
+        if (applicant != null && this.identities.contains(applicant)) this.admin = applicant
     }
 
     override fun toShortResponse(): ChatShortResponse {
@@ -376,11 +372,7 @@ class CommunityEntity(id: EntityID<UUID>) : UUIDEntity(id), Dao, Creator<Communi
         this.name = request.name ?: this.name
         this.description = request.description ?: this.description
         val applicant = IdentityEntity.findById(request.adminId ?: UUID(0, 0))
-        if (applicant != null && this.identities.contains(applicant)) {
-            this.admin = applicant
-        } else {
-            throw IllegalArgumentException("This identity not in community and can't be admin")
-        }
+        if (applicant != null && this.identities.contains(applicant)) this.admin = applicant
     }
 
     override fun toShortResponse(): CommunityShortResponse {
