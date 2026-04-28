@@ -16,6 +16,7 @@ import org.burgas.service.dao.ReadDao
 import org.jetbrains.exposed.dao.load
 import org.jetbrains.exposed.dao.with
 import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransaction
+import org.mindrot.jbcrypt.BCrypt
 import java.sql.Connection
 import java.util.*
 
@@ -103,5 +104,31 @@ class IdentityService : ListDao<IdentityShortResponse>, ReadDao<UUID, IdentityEn
         handleCache(identityEntity)
         identityEntity.delete()
     }
-}
 
+    suspend fun changePassword(request: IdentityRequest): IdentityFullResponse = newSuspendedTransaction(
+        db = DatabaseConnection.postgres,
+        context = Dispatchers.Default,
+        transactionIsolation = Connection.TRANSACTION_READ_COMMITTED
+    ) {
+        val identityEntity = findEntity(request.id!!)
+        if (!BCrypt.checkpw(request.password!!, identityEntity.password)) {
+            identityEntity.apply { this.password = BCrypt.hashpw(request.password, BCrypt.gensalt()) }
+                .toFullResponse()
+        } else {
+            throw IllegalArgumentException("Passwords matched")
+        }
+    }
+
+    suspend fun changeStatus(request: IdentityRequest) = newSuspendedTransaction(
+        db = DatabaseConnection.postgres,
+        context = Dispatchers.Default,
+        transactionIsolation = Connection.TRANSACTION_READ_COMMITTED
+    ) {
+        val identityEntity = findEntity(request.id!!)
+        if (request.status!! != identityEntity.status) {
+            identityEntity.apply { this.status = request.status }
+        } else {
+            throw IllegalArgumentException("identity statuses matched")
+        }
+    }
+}
