@@ -228,3 +228,15 @@ GET /api/v1/chats
 Host: localhost:9000
 Accept: application/json
 Authorization: Basic burgasvv@gmail.com burgasvv
+
+
+
+### Message Requests
+
+
+
+###
+GET /api/v1/messages/by-id?messageId=2953beba-8575-4ee1-b8da-6fd5ea7bda7b
+Host: localhost:9000
+Accept: application/json
+Authorization: Basic burgasvv@gmail.com burgasvv

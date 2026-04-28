@@ -67,7 +67,7 @@ class MessageService : ReadDao<UUID, MessageEntity, MessageFullResponse>, Design
         multiPartData.forEachPart { partData ->
             if (partData is PartData.FileItem) MessageFileEntity.new { this.upload(messageEntity, partData) }
         }
-        val messageFullResponse = findEntity(messageEntity.id.value).toFullResponse()
+        val messageFullResponse = messageEntity.toFullResponse()
         val messageKey = CacheKey.MESSAGE_KEY.format(messageFullResponse.id)
         DatabaseConnection.redis.set(messageKey, Json.encodeToString(messageFullResponse))
         messageFullResponse
