@@ -13,7 +13,6 @@ import org.jetbrains.exposed.sql.transactions.transaction
 import redis.clients.jedis.Jedis
 import java.sql.Connection
 
-@Suppress("unused")
 class DatabaseConnection {
 
     companion object {
