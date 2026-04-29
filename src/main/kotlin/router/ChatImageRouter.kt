@@ -82,7 +82,7 @@ fun Application.configureChatImageRouter() {
 
                 post("/create") {
                     val chatId = UUID.fromString(call.parameters["chatId"])
-                    chatImageService.create(chatId, call.receiveMultipart())
+                    chatImageService.create(chatId, call.receiveMultipart(Long.MAX_VALUE))
                     call.respond(HttpStatusCode.OK)
                 }
 

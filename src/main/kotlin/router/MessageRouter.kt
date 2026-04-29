@@ -54,7 +54,7 @@ fun Application.configureMessageRouter() {
                 }
 
                 post("/create") {
-                    messageService.create(call.receiveMultipart())
+                    messageService.create(call.receiveMultipart(Long.MAX_VALUE))
                     call.respond(HttpStatusCode.OK)
                 }
 

@@ -69,7 +69,7 @@ fun Application.configureIdentityImageRouter() {
 
                 post("/create") {
                     val identityId = UUID.fromString(call.parameters["identityId"])
-                    identityImageService.create(identityId, call.receiveMultipart())
+                    identityImageService.create(identityId, call.receiveMultipart(Long.MAX_VALUE))
                     call.respond(HttpStatusCode.OK)
                 }
 

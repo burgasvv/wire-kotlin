@@ -8,7 +8,6 @@ import kotlinx.io.readByteArray
 import kotlinx.serialization.json.Json
 import org.burgas.database.*
 import org.burgas.dto.*
-import org.burgas.encryption.EncryptionManager
 import org.burgas.util.RegexUtil
 import org.jetbrains.exposed.dao.EntityClass
 import org.jetbrains.exposed.dao.UUIDEntity
@@ -281,7 +280,7 @@ class MessageEntity(id: EntityID<UUID>) : UUIDEntity(id), Dao, CreatorPart,
                     throw IllegalArgumentException("This sender can't send messages to this chat")
                 }
 
-                this.text = EncryptionManager.encrypt(request.text!!)
+                this.text = request.text!!
                 this.createdAt = LocalDateTime.now().toKotlinLocalDateTime()
             } else {
                 throw IllegalArgumentException("Wrong part data name")
@@ -295,7 +294,7 @@ class MessageEntity(id: EntityID<UUID>) : UUIDEntity(id), Dao, CreatorPart,
         return MessageShortResponse(
             id = this.id.value,
             sender = this.sender?.toShortResponse(),
-            text = EncryptionManager.decrypt(this.text),
+            text = this.text,
             files = this.files.map { it.toFileResponse() },
             createdAt = this.createdAt.toJavaLocalDateTime()
                 .format(DateTimeFormatter.ofPattern("dd MMMM yyyy, hh:mm"))
@@ -307,7 +306,7 @@ class MessageEntity(id: EntityID<UUID>) : UUIDEntity(id), Dao, CreatorPart,
             id = this.id.value,
             chat = this.chat.toShortResponse(),
             sender = this.sender?.toShortResponse(),
-            text = EncryptionManager.decrypt(this.text),
+            text = this.text,
             files = this.files.map { it.toFileResponse() },
             createdAt = this.createdAt.toJavaLocalDateTime()
                 .format(DateTimeFormatter.ofPattern("dd MMMM yyyy, hh:mm"))
@@ -470,7 +469,7 @@ class PublicationEntity(id: EntityID<UUID>) : UUIDEntity(id), Dao, CreatorPart,
                     throw IllegalArgumentException("Only admin can send publications")
                 }
 
-                this.text = EncryptionManager.encrypt(request.text!!)
+                this.text = request.text!!
                 this.createdAt = LocalDateTime.now().toKotlinLocalDateTime()
 
             } else {
@@ -485,7 +484,7 @@ class PublicationEntity(id: EntityID<UUID>) : UUIDEntity(id), Dao, CreatorPart,
         return PublicationShortResponse(
             id = this.id.value,
             sender = this.sender?.toShortResponse(),
-            text = EncryptionManager.decrypt(this.text),
+            text = this.text,
             images = this.images.map { it.toImageResponse() },
             files = this.files.map { it.toFileResponse() },
             createdAt = this.createdAt.toJavaLocalDateTime()
@@ -498,7 +497,7 @@ class PublicationEntity(id: EntityID<UUID>) : UUIDEntity(id), Dao, CreatorPart,
             id = this.id.value,
             community = this.community.toShortResponse(),
             sender = this.sender?.toShortResponse(),
-            text = EncryptionManager.decrypt(this.text),
+            text = this.text,
             images = this.images.map { it.toImageResponse() },
             files = this.files.map { it.toFileResponse() },
             comments = this.comments.map { it.toShortResponse() },
@@ -604,7 +603,7 @@ class CommentEntity(id: EntityID<UUID>) : UUIDEntity(id), Dao, CreatorPart,
                     throw IllegalArgumentException("This sender can't send comments to this publication and community")
                 }
 
-                this.text = EncryptionManager.encrypt(request.text!!)
+                this.text = request.text!!
                 this.createdAt = LocalDateTime.now().toKotlinLocalDateTime()
 
             } else {
@@ -619,7 +618,7 @@ class CommentEntity(id: EntityID<UUID>) : UUIDEntity(id), Dao, CreatorPart,
         return CommentShortResponse(
             id = this.id.value,
             sender = this.sender?.toShortResponse(),
-            text = EncryptionManager.decrypt(this.text),
+            text = this.text,
             files = this.files.map { it.toFileResponse() },
             createdAt = this.createdAt.toJavaLocalDateTime()
                 .format(DateTimeFormatter.ofPattern("dd MMMM yyyy, hh:mm"))
@@ -631,7 +630,7 @@ class CommentEntity(id: EntityID<UUID>) : UUIDEntity(id), Dao, CreatorPart,
             id = this.id.value,
             publication = this.publication.toShortResponse(),
             sender = this.sender?.toShortResponse(),
-            text = EncryptionManager.decrypt(this.text),
+            text = this.text,
             files = this.files.map { it.toFileResponse() },
             createdAt = this.createdAt.toJavaLocalDateTime()
                 .format(DateTimeFormatter.ofPattern("dd MMMM yyyy, hh:mm"))
