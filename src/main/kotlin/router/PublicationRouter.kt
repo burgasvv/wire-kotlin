@@ -27,7 +27,6 @@ fun Application.configurePublicationRouter() {
 
         @Suppress("DEPRECATION")
         intercept(ApplicationCallPipeline.Call) {
-
             if (
                 call.request.path().equals("/api/v1/publications/by-id", false) ||
                 call.request.path().equals("/api/v1/publications/delete", false)

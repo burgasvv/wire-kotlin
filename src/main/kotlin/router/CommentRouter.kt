@@ -46,7 +46,7 @@ fun Application.configureCommentRouter() {
                     }
                 }
 
-            } else if (call.request.path().equals("/api/v1/publications/create", false)) {
+            } else if (call.request.path().equals("/api/v1/comments/create", false)) {
                 val principal = call.principal<UserPasswordCredential>()!!
                 val multiPartData = call.receiveMultipart(Long.MAX_VALUE)
                 val commentPart = multiPartData.readPart()!!

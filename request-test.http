@@ -348,3 +348,15 @@ Authorization: Basic burgasvv@gmail.com burgasvv
     "entityId": "50272236-22f1-45b0-ad60-d92de57637b9",
     "imageId": "26912bb2-fa49-447d-96b3-57af43bdd41f"
 }
+
+
+
+### Publication Requests
+
+
+
+###
+GET /api/v1/publications/by-id?publicationId=3562170e-4e47-4c81-8f41-be1d42919ab5
+Host: localhost:9000
+Accept: application/json
+Authorization: Basic burgasvv@gmail.com burgasvv
