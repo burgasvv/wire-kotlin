@@ -68,25 +68,26 @@ class PublicationService : ReadDao<UUID, PublicationEntity, PublicationFullRespo
         }
     }
 
-    override suspend fun create(request: PublicationRequest, files: List<PartData>): PublicationFullResponse = newSuspendedTransaction(
-        db = DatabaseConnection.postgres,
-        context = Dispatchers.Default,
-        transactionIsolation = Connection.TRANSACTION_READ_COMMITTED
-    ) {
-        val publicationEntity = PublicationEntity.new { this.insert(request) }
-        handleCache(publicationEntity)
-        files.forEach { partData ->
-            if (partData.contentType!!.contentType.startsWith("image")) {
-                PublicationImageEntity.new { this.upload(publicationEntity, partData) }
-            } else {
-                PublicationFileEntity.new { this.upload(publicationEntity, partData) }
+    override suspend fun create(request: PublicationRequest, files: List<PartData>): PublicationFullResponse =
+        newSuspendedTransaction(
+            db = DatabaseConnection.postgres,
+            context = Dispatchers.Default,
+            transactionIsolation = Connection.TRANSACTION_READ_COMMITTED
+        ) {
+            val publicationEntity = PublicationEntity.new { this.insert(request) }
+            handleCache(publicationEntity)
+            files.forEach { partData ->
+                if (partData.contentType!!.contentType.startsWith("image")) {
+                    PublicationImageEntity.new { this.upload(publicationEntity, partData) }
+                } else {
+                    PublicationFileEntity.new { this.upload(publicationEntity, partData) }
+                }
             }
+            val publicationFullResponse = publicationEntity.toFullResponse()
+            val publicationKey = CacheKey.PUBLICATION_KEY.format(publicationFullResponse.id)
+            DatabaseConnection.redis.set(publicationKey, Json.encodeToString(publicationFullResponse))
+            publicationFullResponse
         }
-        val publicationFullResponse = publicationEntity.toFullResponse()
-        val publicationKey = CacheKey.PUBLICATION_KEY.format(publicationFullResponse.id)
-        DatabaseConnection.redis.set(publicationKey, Json.encodeToString(publicationFullResponse))
-        publicationFullResponse
-    }
 
     override suspend fun delete(id: UUID) = newSuspendedTransaction(
         db = DatabaseConnection.postgres,

@@ -6,6 +6,7 @@ import org.burgas.cache.CacheKey
 import org.burgas.cache.RedisCacheHandler
 import org.burgas.dao.CommunityEntity
 import org.burgas.database.DatabaseConnection
+import org.burgas.database.IdentityCommunityTable
 import org.burgas.dto.CommunityFullResponse
 import org.burgas.dto.CommunityRequest
 import org.burgas.dto.CommunityShortResponse
@@ -18,6 +19,9 @@ import org.burgas.service.dao.ReadDao
 import org.jetbrains.exposed.dao.load
 import org.jetbrains.exposed.dao.with
 import org.jetbrains.exposed.sql.SizedCollection
+import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
+import org.jetbrains.exposed.sql.and
+import org.jetbrains.exposed.sql.deleteWhere
 import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransaction
 import java.sql.Connection
 import java.util.*
@@ -158,8 +162,11 @@ class CommunityService : ListDao<CommunityShortResponse>, ReadDao<UUID, Communit
         handleCache(communityEntity)
         val identityEntity = identityService.findEntity(groupRequest.applicantId)
         identityService.handleCache(identityEntity)
-        if (communityEntity.identities.contains(identityEntity)) {
-            communityEntity.identities = SizedCollection(communityEntity.identities - identityEntity)
+        if (communityEntity.identities.map { it.id.value }.contains(identityEntity.id.value)) {
+            IdentityCommunityTable.deleteWhere {
+                (IdentityCommunityTable.identityId eq identityEntity.id.value) and
+                        (IdentityCommunityTable.communityId eq communityEntity.id.value)
+            }
             communityEntity
         } else {
             throw IllegalArgumentException("Applicant not in community")

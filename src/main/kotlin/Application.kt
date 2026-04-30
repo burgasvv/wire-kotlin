@@ -10,6 +10,9 @@ import org.burgas.router.configureIdentityImageRouter
 import org.burgas.router.configureIdentityRouter
 import org.burgas.router.configureMessageFileRouter
 import org.burgas.router.configureMessageRouter
+import org.burgas.router.configurePublicationFileRouter
+import org.burgas.router.configurePublicationImageRouter
+import org.burgas.router.configurePublicationRouter
 import org.burgas.router.configureSecurityRouter
 import org.burgas.security.configureSecurity
 import org.burgas.serialization.configureSerialization
@@ -36,4 +39,8 @@ fun Application.module() {
 
     configureCommunityRouter()
     configureCommunityImageRouter()
+
+    configurePublicationRouter()
+    configurePublicationFileRouter()
+    configurePublicationImageRouter()
 }

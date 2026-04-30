@@ -231,6 +231,26 @@ Authorization: Basic burgasvv@gmail.com burgasvv
 
 
 
+### Chat-Image Requests
+
+
+
+###
+POST /api/v1/chat-images/make-preview
+Host: localhost:9000
+Accept: application/json
+Content-Type: application/json
+Origin: http://localhost:9000
+X-Csrf-Token: 34604e35-c39e-4ebe-8258-1e17ac718669
+Authorization: Basic burgasvv@gmail.com burgasvv
+
+{
+    "entityId": "267ac6cc-da06-43b6-b372-9998952c16ba",
+    "imageId": "098ba0d2-90a1-460b-a170-787b5ed9a17c"
+}
+
+
+
 ### Message Requests
 
 
@@ -240,3 +260,91 @@ GET /api/v1/messages/by-id?messageId=a905d9bd-e442-469f-82a3-e79664c31cfa
 Host: localhost:9000
 Accept: application/json
 Authorization: Basic zagor@gmail.com zagor
+
+
+
+### Community Requests
+
+
+
+###
+POST /api/v1/communities/create
+Host: localhost:9000
+Accept: application/json
+Content-Type: application/json
+Origin: http://localhost:9000
+X-Csrf-Token: 34604e35-c39e-4ebe-8258-1e17ac718669
+Authorization: Basic burgasvv@gmail.com burgasvv
+
+{
+    "name": "Selectel Community",
+    "description": "Описание сообщества Selectel Community",
+    "adminId": "b7ecf544-3fbc-4087-893a-16b69f8ce0a7"
+}
+
+###
+POST /api/v1/communities/update
+Host: localhost:9000
+Accept: application/json
+Content-Type: application/json
+Origin: http://localhost:9000
+X-Csrf-Token: 34604e35-c39e-4ebe-8258-1e17ac718669
+Authorization: Basic burgasvv@gmail.com burgasvv
+
+{
+    "id": "50272236-22f1-45b0-ad60-d92de57637b9",
+    "description": "Описание сообщества для пользователей Selectel Community"
+}
+
+###
+GET /api/v1/communities/by-id?communityId=50272236-22f1-45b0-ad60-d92de57637b9
+Host: localhost:9000
+Accept: application/json
+
+###
+POST /api/v1/communities/join
+Host: localhost:9000
+Accept: application/json
+Content-Type: application/json
+Origin: http://localhost:9000
+X-Csrf-Token: 34604e35-c39e-4ebe-8258-1e17ac718669
+Authorization: Basic zagor@gmail.com zagor
+
+{
+    "groupId": "50272236-22f1-45b0-ad60-d92de57637b9",
+    "applicantId": "0be23cf2-1d4a-4f9d-a938-183b22078fd2"
+}
+
+###
+POST /api/v1/communities/out
+Host: localhost:9000
+Accept: application/json
+Content-Type: application/json
+Origin: http://localhost:9000
+X-Csrf-Token: 34604e35-c39e-4ebe-8258-1e17ac718669
+Authorization: Basic zagor@gmail.com zagor
+
+{
+    "groupId": "50272236-22f1-45b0-ad60-d92de57637b9",
+    "applicantId": "0be23cf2-1d4a-4f9d-a938-183b22078fd2"
+}
+
+
+
+### Community-Image Requests
+
+
+
+###
+POST /api/v1/community-images/make-preview
+Host: localhost:9000
+Accept: application/json
+Content-Type: application/json
+Origin: http://localhost:9000
+X-Csrf-Token: 34604e35-c39e-4ebe-8258-1e17ac718669
+Authorization: Basic burgasvv@gmail.com burgasvv
+
+{
+    "entityId": "50272236-22f1-45b0-ad60-d92de57637b9",
+    "imageId": "26912bb2-fa49-447d-96b3-57af43bdd41f"
+}

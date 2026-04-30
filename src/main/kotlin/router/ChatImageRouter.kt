@@ -1,34 +1,24 @@
 package org.burgas.router
 
-import io.ktor.http.ContentType
-import io.ktor.http.HttpStatusCode
-import io.ktor.server.application.Application
-import io.ktor.server.application.ApplicationCallPipeline
-import io.ktor.server.application.call
-import io.ktor.server.auth.UserPasswordCredential
-import io.ktor.server.auth.authenticate
-import io.ktor.server.auth.principal
-import io.ktor.server.request.path
-import io.ktor.server.request.receive
-import io.ktor.server.request.receiveMultipart
-import io.ktor.server.response.respond
-import io.ktor.server.response.respondBytes
-import io.ktor.server.routing.delete
-import io.ktor.server.routing.get
-import io.ktor.server.routing.intercept
-import io.ktor.server.routing.post
-import io.ktor.server.routing.route
-import io.ktor.server.routing.routing
-import io.ktor.util.AttributeKey
+import io.ktor.http.*
+import io.ktor.server.application.*
+import io.ktor.server.auth.*
+import io.ktor.server.request.*
+import io.ktor.server.response.*
+import io.ktor.server.routing.*
+import io.ktor.util.*
+import kotlinx.coroutines.Dispatchers
+import org.burgas.dao.ChatEntity
+import org.burgas.database.DatabaseConnection
 import org.burgas.dto.DocumentRequest
 import org.burgas.dto.ImageRequest
 import org.burgas.service.ChatImageService
-import org.burgas.service.IdentityService
-import java.util.UUID
+import org.jetbrains.exposed.dao.load
+import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransaction
+import java.util.*
 
 fun Application.configureChatImageRouter() {
 
-    val identityService = IdentityService()
     val chatImageService = ChatImageService()
 
     routing {
@@ -40,26 +30,33 @@ fun Application.configureChatImageRouter() {
                 call.request.path().equals("/api/v1/chat-images/delete", false)
             ) {
                 val principal = call.principal<UserPasswordCredential>()!!
-                val identityId = UUID.fromString(call.parameters["identityId"])
+                val chatId = UUID.fromString(call.parameters["chatId"])
 
-                val identityEntity = identityService.findEntity(identityId)
-                if (identityEntity.email == principal.name) {
-                    proceed()
-                } else {
-                    throw IllegalArgumentException("Identity not authorized")
+                newSuspendedTransaction(
+                    db = DatabaseConnection.postgres, context = Dispatchers.Default, readOnly = true
+                ) {
+                    val chatEntity = ChatEntity.findById(chatId)!!.load(ChatEntity::admin)
+                    if (chatEntity.admin!!.email == principal.name) {
+                        proceed()
+                    } else {
+                        throw IllegalArgumentException("Identity not authorized")
+                    }
                 }
 
             } else if (call.request.path().equals("/api/v1/chat-images/make-preview", false)) {
                 val principal = call.principal<UserPasswordCredential>()!!
                 val imageRequest = call.receive(ImageRequest::class)
-                val identityId = imageRequest.entityId
 
-                val identityEntity = identityService.findEntity(identityId)
-                if (identityEntity.email == principal.name) {
-                    call.attributes[AttributeKey<ImageRequest>("imageRequest")] = imageRequest
-                    proceed()
-                } else {
-                    throw IllegalArgumentException("Identity not authorized")
+                newSuspendedTransaction(
+                    db = DatabaseConnection.postgres, context = Dispatchers.Default, readOnly = true
+                ) {
+                    val chatEntity = ChatEntity.findById(imageRequest.entityId)!!.load(ChatEntity::admin)
+                    if (chatEntity.admin!!.email == principal.name) {
+                        call.attributes[AttributeKey<ImageRequest>("imageRequest")] = imageRequest
+                        proceed()
+                    } else {
+                        throw IllegalArgumentException("Identity not authorized")
+                    }
                 }
 
             } else {
