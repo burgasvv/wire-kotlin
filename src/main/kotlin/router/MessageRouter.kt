@@ -1,14 +1,20 @@
 package org.burgas.router
 
 import io.ktor.http.*
+import io.ktor.http.content.PartData
+import io.ktor.http.content.forEachPart
 import io.ktor.server.application.*
 import io.ktor.server.auth.*
 import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
+import io.ktor.util.AttributeKey
 import kotlinx.coroutines.Dispatchers
+import kotlinx.serialization.json.Json
+import org.burgas.dao.IdentityEntity
 import org.burgas.dao.MessageEntity
 import org.burgas.database.DatabaseConnection
+import org.burgas.dto.MessageRequest
 import org.burgas.service.MessageService
 import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransaction
 import java.util.*
@@ -35,8 +41,39 @@ fun Application.configureMessageRouter() {
                     if (messageEntity.sender!!.email == principal.name) {
                         proceed()
                     } else {
-                        throw IllegalArgumentException("identity not authorized")
+                        throw IllegalArgumentException("Identity not authorized")
                     }
+                }
+
+            } else if (call.request.path().equals("/api/v1/messages/create", false)) {
+                val principal = call.principal<UserPasswordCredential>()!!
+                val multiPartData = call.receiveMultipart(Long.MAX_VALUE)
+                val messagePart = multiPartData.readPart()!!
+
+                if (messagePart is PartData.FormItem && messagePart.name == "messageRequest") {
+                    val messageRequest = Json.decodeFromString<MessageRequest>(messagePart.value)
+                    val senderId = messageRequest.senderId!!
+
+                    val identityEntity = newSuspendedTransaction(
+                        db = DatabaseConnection.postgres, context = Dispatchers.Default, readOnly = true
+                    ) {
+                        IdentityEntity.findById(senderId)!!
+                    }
+                    val files: MutableList<PartData> = mutableListOf()
+                    multiPartData.forEachPart { partData ->
+                        if (partData is PartData.FileItem) files.add(partData)
+                    }
+
+                    if (identityEntity.email == principal.name) {
+                        call.attributes[AttributeKey<MessageRequest>("messageRequest")] = messageRequest
+                        call.attributes[AttributeKey<List<PartData>>("files")] = files.toList()
+                        proceed()
+                    } else {
+                        throw IllegalArgumentException("Identity not authorized")
+                    }
+
+                } else {
+                    throw IllegalArgumentException("Message part is not Form Item or have wrong part name")
                 }
 
             } else {
@@ -54,7 +91,9 @@ fun Application.configureMessageRouter() {
                 }
 
                 post("/create") {
-                    messageService.create(call.receiveMultipart(Long.MAX_VALUE))
+                    val messageRequest = call.attributes[AttributeKey<MessageRequest>("messageRequest")]
+                    val files = call.attributes[AttributeKey<List<PartData>>("files")]
+                    messageService.create(messageRequest, files)
                     call.respond(HttpStatusCode.OK)
                 }
 

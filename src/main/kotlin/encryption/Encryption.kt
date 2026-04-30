@@ -7,37 +7,34 @@ import javax.crypto.spec.IvParameterSpec
 import javax.crypto.spec.SecretKeySpec
 
 @Suppress("unused")
-class EncryptionManager {
+object EncryptionManager {
 
-    companion object {
+    private const val ALGORITHM = "AES/CBC/PKCS5Padding"
+    private const val SECRET_KEY = "12345678901234567890123456789012"
+    private val IV = RandomGenerator.getDefault()
+        .nextLong(1000000000000000, 9999999999999999)
+        .toString()
 
-        private const val ALGORITHM = "AES/CBC/PKCS5Padding"
-        private const val SECRET_KEY = "12345678901234567890123456789012"
-        private val IV = RandomGenerator.getDefault()
-            .nextLong(1000000000000000, 9999999999999999)
-            .toString()
+    fun encrypt(plainText: String): String {
+        val keySpec = SecretKeySpec(SECRET_KEY.toByteArray(), "AES")
+        val ivSpec = IvParameterSpec(IV.toByteArray())
 
-        fun encrypt(plainText: String): String {
-            val keySpec = SecretKeySpec(SECRET_KEY.toByteArray(), "AES")
-            val ivSpec = IvParameterSpec(IV.toByteArray())
+        val cipher = Cipher.getInstance(ALGORITHM)
+        cipher.init(Cipher.ENCRYPT_MODE, keySpec, ivSpec)
 
-            val cipher = Cipher.getInstance(ALGORITHM)
-            cipher.init(Cipher.ENCRYPT_MODE, keySpec, ivSpec)
+        val encryptedBytes = cipher.doFinal(plainText.toByteArray())
+        return Base64.getEncoder().encodeToString(encryptedBytes)
+    }
 
-            val encryptedBytes = cipher.doFinal(plainText.toByteArray())
-            return Base64.getEncoder().encodeToString(encryptedBytes)
-        }
+    fun decrypt(encryptedText: String): String {
+        val keySpec = SecretKeySpec(SECRET_KEY.toByteArray(), "AES")
+        val ivSpec = IvParameterSpec(IV.toByteArray())
 
-        fun decrypt(encryptedText: String): String {
-            val keySpec = SecretKeySpec(SECRET_KEY.toByteArray(), "AES")
-            val ivSpec = IvParameterSpec(IV.toByteArray())
+        val cipher = Cipher.getInstance(ALGORITHM)
+        cipher.init(Cipher.DECRYPT_MODE, keySpec, ivSpec)
 
-            val cipher = Cipher.getInstance(ALGORITHM)
-            cipher.init(Cipher.DECRYPT_MODE, keySpec, ivSpec)
-
-            val decodedBytes = Base64.getDecoder().decode(encryptedText)
-            val decryptedBytes = cipher.doFinal(decodedBytes)
-            return String(decryptedBytes)
-        }
+        val decodedBytes = Base64.getDecoder().decode(encryptedText)
+        val decryptedBytes = cipher.doFinal(decodedBytes)
+        return String(decryptedBytes)
     }
 }

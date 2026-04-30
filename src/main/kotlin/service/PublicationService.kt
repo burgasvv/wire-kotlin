@@ -1,8 +1,6 @@
 package org.burgas.service
 
-import io.ktor.http.content.MultiPartData
-import io.ktor.http.content.PartData
-import io.ktor.http.content.forEachPart
+import io.ktor.http.content.*
 import kotlinx.coroutines.Dispatchers
 import kotlinx.serialization.json.Json
 import org.burgas.cache.CacheKey
@@ -12,15 +10,16 @@ import org.burgas.dao.PublicationFileEntity
 import org.burgas.dao.PublicationImageEntity
 import org.burgas.database.DatabaseConnection
 import org.burgas.dto.PublicationFullResponse
+import org.burgas.dto.PublicationRequest
 import org.burgas.service.dao.DesignDaoPart
 import org.burgas.service.dao.ReadDao
 import org.jetbrains.exposed.dao.load
 import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransaction
 import java.sql.Connection
-import java.util.UUID
+import java.util.*
 
 class PublicationService : ReadDao<UUID, PublicationEntity, PublicationFullResponse>,
-    DesignDaoPart<UUID, PublicationFullResponse>, RedisCacheHandler<PublicationEntity> {
+    DesignDaoPart<UUID, PublicationRequest, PublicationFullResponse>, RedisCacheHandler<PublicationEntity> {
 
     override suspend fun handleCache(entity: PublicationEntity) {
         val redis = DatabaseConnection.redis
@@ -69,24 +68,21 @@ class PublicationService : ReadDao<UUID, PublicationEntity, PublicationFullRespo
         }
     }
 
-    override suspend fun create(multiPartData: MultiPartData): PublicationFullResponse = newSuspendedTransaction(
+    override suspend fun create(request: PublicationRequest, files: List<PartData>): PublicationFullResponse = newSuspendedTransaction(
         db = DatabaseConnection.postgres,
         context = Dispatchers.Default,
         transactionIsolation = Connection.TRANSACTION_READ_COMMITTED
     ) {
-        val readPart = multiPartData.readPart()!!
-        val publicationEntity = PublicationEntity.new { this.insert(readPart) }
+        val publicationEntity = PublicationEntity.new { this.insert(request) }
         handleCache(publicationEntity)
-        multiPartData.forEachPart { partData ->
-            if (partData is PartData.FileItem) {
-                if (partData.contentType!!.contentType.startsWith("image")) {
-                    PublicationImageEntity.new { this.upload(publicationEntity, partData) }
-                } else {
-                    PublicationFileEntity.new { this.upload(publicationEntity, partData) }
-                }
+        files.forEach { partData ->
+            if (partData.contentType!!.contentType.startsWith("image")) {
+                PublicationImageEntity.new { this.upload(publicationEntity, partData) }
+            } else {
+                PublicationFileEntity.new { this.upload(publicationEntity, partData) }
             }
         }
-        val publicationFullResponse = findEntity(publicationEntity.id.value).toFullResponse()
+        val publicationFullResponse = publicationEntity.toFullResponse()
         val publicationKey = CacheKey.PUBLICATION_KEY.format(publicationFullResponse.id)
         DatabaseConnection.redis.set(publicationKey, Json.encodeToString(publicationFullResponse))
         publicationFullResponse

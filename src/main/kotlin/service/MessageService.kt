@@ -9,6 +9,7 @@ import org.burgas.dao.MessageEntity
 import org.burgas.dao.MessageFileEntity
 import org.burgas.database.DatabaseConnection
 import org.burgas.dto.MessageFullResponse
+import org.burgas.dto.MessageRequest
 import org.burgas.service.dao.DesignDaoPart
 import org.burgas.service.dao.ReadDao
 import org.jetbrains.exposed.dao.load
@@ -16,8 +17,8 @@ import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransacti
 import java.sql.Connection
 import java.util.*
 
-class MessageService : ReadDao<UUID, MessageEntity, MessageFullResponse>, DesignDaoPart<UUID, MessageFullResponse>,
-    RedisCacheHandler<MessageEntity> {
+class MessageService : ReadDao<UUID, MessageEntity, MessageFullResponse>,
+    DesignDaoPart<UUID, MessageRequest, MessageFullResponse>, RedisCacheHandler<MessageEntity> {
 
     override suspend fun handleCache(entity: MessageEntity) {
         val redis = DatabaseConnection.redis
@@ -56,22 +57,20 @@ class MessageService : ReadDao<UUID, MessageEntity, MessageFullResponse>, Design
         }
     }
 
-    override suspend fun create(multiPartData: MultiPartData): MessageFullResponse = newSuspendedTransaction(
-        db = DatabaseConnection.postgres,
-        context = Dispatchers.Default,
-        transactionIsolation = Connection.TRANSACTION_READ_COMMITTED
-    ) {
-        val readPart = multiPartData.readPart()!!
-        val messageEntity = MessageEntity.new { this.insert(readPart) }
-        handleCache(messageEntity)
-        multiPartData.forEachPart { partData ->
-            if (partData is PartData.FileItem) MessageFileEntity.new { this.upload(messageEntity, partData) }
+    override suspend fun create(request: MessageRequest, files: List<PartData>): MessageFullResponse =
+        newSuspendedTransaction(
+            db = DatabaseConnection.postgres,
+            context = Dispatchers.Default,
+            transactionIsolation = Connection.TRANSACTION_READ_COMMITTED
+        ) {
+            val messageEntity = MessageEntity.new { this.insert(request) }
+            handleCache(messageEntity)
+            files.forEach { partData -> MessageFileEntity.new { this.upload(messageEntity, partData) } }
+            val messageFullResponse = messageEntity.toFullResponse()
+            val messageKey = CacheKey.MESSAGE_KEY.format(messageFullResponse.id)
+            DatabaseConnection.redis.set(messageKey, Json.encodeToString(messageFullResponse))
+            messageFullResponse
         }
-        val messageFullResponse = messageEntity.toFullResponse()
-        val messageKey = CacheKey.MESSAGE_KEY.format(messageFullResponse.id)
-        DatabaseConnection.redis.set(messageKey, Json.encodeToString(messageFullResponse))
-        messageFullResponse
-    }
 
     override suspend fun delete(id: UUID) = newSuspendedTransaction(
         db = DatabaseConnection.postgres,

@@ -5,7 +5,6 @@ import io.ktor.utils.io.*
 import kotlinx.datetime.toJavaLocalDateTime
 import kotlinx.datetime.toKotlinLocalDateTime
 import kotlinx.io.readByteArray
-import kotlinx.serialization.json.Json
 import org.burgas.database.*
 import org.burgas.dto.*
 import org.burgas.util.RegexUtil
@@ -34,8 +33,8 @@ interface Creator<in R : Request> {
     fun insert(request: R)
 }
 
-interface CreatorPart {
-    fun insert(partData: PartData)
+interface CreatorPart<in R : Request> {
+    fun insert(request: R)
 }
 
 interface Editor<in R : Request> {
@@ -252,7 +251,7 @@ class ChatImageEntity(id: EntityID<UUID>) : UUIDEntity(id), Document, Image, Upl
     }
 }
 
-class MessageEntity(id: EntityID<UUID>) : UUIDEntity(id), Dao, CreatorPart,
+class MessageEntity(id: EntityID<UUID>) : UUIDEntity(id), Dao, CreatorPart<MessageRequest>,
     ResponseFactory<MessageShortResponse, MessageFullResponse> {
 
     companion object : UUIDEntityClass<MessageEntity>(MessageTable)
@@ -265,29 +264,19 @@ class MessageEntity(id: EntityID<UUID>) : UUIDEntity(id), Dao, CreatorPart,
 
     var createdAt by MessageTable.createdAt
 
-    override fun insert(partData: PartData) {
-        if (partData is PartData.FormItem) {
+    override fun insert(request: MessageRequest) {
+        val chatEntity = ChatEntity.findById(request.chatId!!)!!
+        val identityEntity = IdentityEntity.findById(request.senderId!!)!!
 
-            if (partData.name == "messageRequest") {
-                val request = Json.decodeFromString<MessageRequest>(partData.value)
-                val chatEntity = ChatEntity.findById(request.chatId!!)!!
-                val identityEntity = IdentityEntity.findById(request.senderId!!)!!
-
-                if (chatEntity.identities.contains(identityEntity)) {
-                    this.chat = chatEntity
-                    this.sender = identityEntity
-                } else {
-                    throw IllegalArgumentException("This sender can't send messages to this chat")
-                }
-
-                this.text = request.text!!
-                this.createdAt = LocalDateTime.now().toKotlinLocalDateTime()
-            } else {
-                throw IllegalArgumentException("Wrong part data name")
-            }
+        if (chatEntity.identities.contains(identityEntity)) {
+            this.chat = chatEntity
+            this.sender = identityEntity
         } else {
-            throw IllegalArgumentException("Part data is not form item")
+            throw IllegalArgumentException("This sender can't send messages to this chat")
         }
+
+        this.text = request.text!!
+        this.createdAt = LocalDateTime.now().toKotlinLocalDateTime()
     }
 
     override fun toShortResponse(): MessageShortResponse {
@@ -438,7 +427,7 @@ class CommunityImageEntity(id: EntityID<UUID>) : UUIDEntity(id), Document, Image
     }
 }
 
-class PublicationEntity(id: EntityID<UUID>) : UUIDEntity(id), Dao, CreatorPart,
+class PublicationEntity(id: EntityID<UUID>) : UUIDEntity(id), Dao, CreatorPart<PublicationRequest>,
     ResponseFactory<PublicationShortResponse, PublicationFullResponse> {
 
     companion object : UUIDEntityClass<PublicationEntity>(PublicationTable)
@@ -454,30 +443,19 @@ class PublicationEntity(id: EntityID<UUID>) : UUIDEntity(id), Dao, CreatorPart,
 
     var createdAt by PublicationTable.createdAt
 
-    override fun insert(partData: PartData) {
-        if (partData is PartData.FormItem) {
+    override fun insert(request: PublicationRequest) {
+        val communityEntity = CommunityEntity.findById(request.communityId!!)!!
+        val identityEntity = IdentityEntity.findById(request.senderId!!)!!
 
-            if (partData.name == "publicationRequest") {
-                val request = Json.decodeFromString<PublicationRequest>(partData.value)
-                val communityEntity = CommunityEntity.findById(request.communityId!!)!!
-                val identityEntity = IdentityEntity.findById(request.senderId!!)!!
-
-                if (communityEntity.admin == identityEntity) {
-                    this.community = communityEntity
-                    this.sender = identityEntity
-                } else {
-                    throw IllegalArgumentException("Only admin can send publications")
-                }
-
-                this.text = request.text!!
-                this.createdAt = LocalDateTime.now().toKotlinLocalDateTime()
-
-            } else {
-                throw IllegalArgumentException("Wrong part data name")
-            }
+        if (communityEntity.admin == identityEntity) {
+            this.community = communityEntity
+            this.sender = identityEntity
         } else {
-            throw IllegalArgumentException("Part data is not form item")
+            throw IllegalArgumentException("Only admin can send publications")
         }
+
+        this.text = request.text!!
+        this.createdAt = LocalDateTime.now().toKotlinLocalDateTime()
     }
 
     override fun toShortResponse(): PublicationShortResponse {
@@ -574,7 +552,7 @@ class PublicationImageEntity(id: EntityID<UUID>) : UUIDEntity(id), Document, Ima
     }
 }
 
-class CommentEntity(id: EntityID<UUID>) : UUIDEntity(id), Dao, CreatorPart,
+class CommentEntity(id: EntityID<UUID>) : UUIDEntity(id), Dao, CreatorPart<CommentRequest>,
     ResponseFactory<CommentShortResponse, CommentFullResponse> {
 
     companion object : UUIDEntityClass<CommentEntity>(CommentTable)
@@ -588,30 +566,19 @@ class CommentEntity(id: EntityID<UUID>) : UUIDEntity(id), Dao, CreatorPart,
 
     var createdAt by CommentTable.createdAt
 
-    override fun insert(partData: PartData) {
-        if (partData is PartData.FormItem) {
+    override fun insert(request: CommentRequest) {
+        val publicationEntity = PublicationEntity.findById(request.publicationId!!)!!
+        val identityEntity = IdentityEntity.findById(request.senderId!!)!!
 
-            if (partData.name == "commentRequest") {
-                val request = Json.decodeFromString<CommentRequest>(partData.value)
-                val publicationEntity = PublicationEntity.findById(request.publicationId!!)!!
-                val identityEntity = IdentityEntity.findById(request.senderId!!)!!
-
-                if (publicationEntity.community.identities.contains(identityEntity)) {
-                    this.publication = publicationEntity
-                    this.sender = identityEntity
-                } else {
-                    throw IllegalArgumentException("This sender can't send comments to this publication and community")
-                }
-
-                this.text = request.text!!
-                this.createdAt = LocalDateTime.now().toKotlinLocalDateTime()
-
-            } else {
-                throw IllegalArgumentException("Wrong part data name")
-            }
+        if (publicationEntity.community.identities.contains(identityEntity)) {
+            this.publication = publicationEntity
+            this.sender = identityEntity
         } else {
-            throw IllegalArgumentException("Part data is not form item")
+            throw IllegalArgumentException("This sender can't send comments to this publication and community")
         }
+
+        this.text = request.text!!
+        this.createdAt = LocalDateTime.now().toKotlinLocalDateTime()
     }
 
     override fun toShortResponse(): CommentShortResponse {

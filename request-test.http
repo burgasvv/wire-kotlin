@@ -236,7 +236,7 @@ Authorization: Basic burgasvv@gmail.com burgasvv
 
 
 ###
-GET /api/v1/messages/by-id?messageId=2953beba-8575-4ee1-b8da-6fd5ea7bda7b
+GET /api/v1/messages/by-id?messageId=a905d9bd-e442-469f-82a3-e79664c31cfa
 Host: localhost:9000
 Accept: application/json
-Authorization: Basic burgasvv@gmail.com burgasvv
+Authorization: Basic zagor@gmail.com zagor

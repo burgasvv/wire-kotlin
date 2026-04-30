@@ -1,8 +1,6 @@
 package org.burgas.service
 
-import io.ktor.http.content.MultiPartData
-import io.ktor.http.content.PartData
-import io.ktor.http.content.forEachPart
+import io.ktor.http.content.*
 import kotlinx.coroutines.Dispatchers
 import kotlinx.serialization.json.Json
 import org.burgas.cache.CacheKey
@@ -11,15 +9,16 @@ import org.burgas.dao.CommentEntity
 import org.burgas.dao.CommentFileEntity
 import org.burgas.database.DatabaseConnection
 import org.burgas.dto.CommentFullResponse
+import org.burgas.dto.CommentRequest
 import org.burgas.service.dao.DesignDaoPart
 import org.burgas.service.dao.ReadDao
 import org.jetbrains.exposed.dao.load
 import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransaction
 import java.sql.Connection
-import java.util.UUID
+import java.util.*
 
 class CommentService : ReadDao<UUID, CommentEntity, CommentFullResponse>,
-    DesignDaoPart<UUID, CommentFullResponse>, RedisCacheHandler<CommentEntity> {
+    DesignDaoPart<UUID, CommentRequest, CommentFullResponse>, RedisCacheHandler<CommentEntity> {
 
     override suspend fun handleCache(entity: CommentEntity) {
         val redis = DatabaseConnection.redis
@@ -58,18 +57,15 @@ class CommentService : ReadDao<UUID, CommentEntity, CommentFullResponse>,
         }
     }
 
-    override suspend fun create(multiPartData: MultiPartData): CommentFullResponse = newSuspendedTransaction(
+    override suspend fun create(request: CommentRequest, files: List<PartData>): CommentFullResponse = newSuspendedTransaction(
         db = DatabaseConnection.postgres,
         context = Dispatchers.Default,
         transactionIsolation = Connection.TRANSACTION_READ_COMMITTED
     ) {
-        val readPart = multiPartData.readPart()!!
-        val commentEntity = CommentEntity.new { this.insert(readPart) }
+        val commentEntity = CommentEntity.new { this.insert(request) }
         handleCache(commentEntity)
-        multiPartData.forEachPart { partData ->
-            if (partData is PartData.FileItem) CommentFileEntity.new { this.upload(commentEntity, partData) }
-        }
-        val commentFullResponse = findEntity(commentEntity.id.value).toFullResponse()
+        files.forEach { partData -> CommentFileEntity.new { this.upload(commentEntity, partData) } }
+        val commentFullResponse = commentEntity.toFullResponse()
         val commentKey = CacheKey.COMMENT_KEY.format(commentFullResponse.id)
         DatabaseConnection.redis.set(commentKey, Json.encodeToString(commentFullResponse))
         commentFullResponse
