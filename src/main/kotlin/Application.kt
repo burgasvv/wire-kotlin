@@ -4,6 +4,8 @@ import io.ktor.server.application.*
 import org.burgas.database.configureDatabase
 import org.burgas.router.configureChatImageRouter
 import org.burgas.router.configureChatRouter
+import org.burgas.router.configureCommentFileRouter
+import org.burgas.router.configureCommentRouter
 import org.burgas.router.configureCommunityImageRouter
 import org.burgas.router.configureCommunityRouter
 import org.burgas.router.configureIdentityImageRouter
@@ -43,4 +45,7 @@ fun Application.module() {
     configurePublicationRouter()
     configurePublicationFileRouter()
     configurePublicationImageRouter()
+
+    configureCommentRouter()
+    configureCommentFileRouter()
 }
