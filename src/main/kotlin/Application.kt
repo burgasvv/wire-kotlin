@@ -18,6 +18,7 @@ import org.burgas.router.configurePublicationRouter
 import org.burgas.router.configureSecurityRouter
 import org.burgas.security.configureSecurity
 import org.burgas.serialization.configureSerialization
+import org.burgas.sse.configureServerSentEvent
 
 fun main(args: Array<String>) {
     io.ktor.server.netty.EngineMain.main(args)
@@ -27,6 +28,7 @@ fun Application.module() {
     configureSerialization()
     configureSecurity()
     configureDatabase()
+    configureServerSentEvent()
 
     configureSecurityRouter()
 

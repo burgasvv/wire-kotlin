@@ -39,6 +39,7 @@ dependencies {
     implementation("io.ktor:ktor-server-cors:3.4.2")
     implementation("io.ktor:ktor-server-csrf:3.4.2")
     implementation("io.ktor:ktor-server-auth:3.4.2")
+    implementation("io.ktor:ktor-server-sse:3.4.2")
     testImplementation("io.ktor:ktor-server-test-host")
     testImplementation("org.jetbrains.kotlin:kotlin-test-junit:2.3.20")
 }
