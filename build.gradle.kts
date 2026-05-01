@@ -1,4 +1,6 @@
 
+@file:Suppress("VulnerableLibrariesLocal")
+
 plugins {
     kotlin("jvm") version "2.3.0"
     id("io.ktor.plugin") version "3.4.2"
@@ -40,6 +42,7 @@ dependencies {
     implementation("io.ktor:ktor-server-csrf:3.4.2")
     implementation("io.ktor:ktor-server-auth:3.4.2")
     implementation("io.ktor:ktor-server-sse:3.4.2")
+    implementation("io.ktor:ktor-server-websockets:3.4.2")
     testImplementation("io.ktor:ktor-server-test-host")
     testImplementation("org.jetbrains.kotlin:kotlin-test-junit:2.3.20")
 }

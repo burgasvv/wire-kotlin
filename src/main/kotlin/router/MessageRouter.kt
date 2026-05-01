@@ -8,8 +8,11 @@ import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import io.ktor.server.sse.*
+import io.ktor.server.websocket.*
 import io.ktor.sse.*
 import io.ktor.util.*
+import io.ktor.websocket.Frame
+import io.ktor.websocket.readText
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -23,6 +26,7 @@ import org.burgas.service.ChatService
 import org.burgas.service.MessageService
 import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransaction
 import java.util.*
+import java.util.concurrent.CopyOnWriteArraySet
 import kotlin.time.Duration
 
 fun Application.configureMessageRouter() {
@@ -32,6 +36,7 @@ fun Application.configureMessageRouter() {
     val messages = MutableSharedFlow<MessageFullResponse>(
         replay = Int.MAX_VALUE, onBufferOverflow = BufferOverflow.DROP_LATEST
     )
+    val connections: CopyOnWriteArraySet<DefaultWebSocketServerSession> = CopyOnWriteArraySet()
 
     routing {
 
@@ -93,6 +98,36 @@ fun Application.configureMessageRouter() {
 
         route("/api/v1/messages") {
 
+            webSocket("/ws/by-chat") {
+                connections += this
+                try {
+                    val chatId = UUID.fromString(call.parameters["chatId"])
+                    val chatEntity = chatService.findEntity(chatId)
+                    val messageFullResponses = newSuspendedTransaction(
+                        db = DatabaseConnection.postgres, context = Dispatchers.Default
+                    ) {
+                        chatEntity.messages.map { it.toFullResponse() }
+                    }
+                    messageFullResponses.forEach { send(Frame.Text(it.toString())) }
+                    for (frame in incoming) {
+                        when (frame) {
+                            is Frame.Text -> {
+                                val text = frame.readText()
+                                val messageFullResponse = Json.decodeFromString<MessageFullResponse>(text)
+                                if (messageFullResponse.chat?.id == chatId) {
+                                    send(Frame.Text(text))
+                                } else {
+                                    send(Frame.Text("Wrong chat for this message"))
+                                }
+                            }
+                            else -> send(Frame.Text("Wrong type of message"))
+                        }
+                    }
+                } finally {
+                    connections -= this
+                }
+            }
+
             authenticate("basic-auth-all") {
 
                 sse("/by-chat") {
@@ -121,6 +156,9 @@ fun Application.configureMessageRouter() {
                     val files = call.attributes[AttributeKey<List<PartData>>("files")]
                     val messageFullResponse = messageService.create(messageRequest, files)
                     messages.emit(messageFullResponse)
+                    connections.forEach { defaultWebSocketServerSession ->
+                        defaultWebSocketServerSession.send(Frame.Text(messageFullResponse.toString()))
+                    }
                     call.respond(HttpStatusCode.OK)
                 }
 
