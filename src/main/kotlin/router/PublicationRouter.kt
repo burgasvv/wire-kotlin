@@ -9,12 +9,16 @@ import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import io.ktor.server.sse.*
 import io.ktor.server.websocket.DefaultWebSocketServerSession
+import io.ktor.server.websocket.webSocket
 import io.ktor.sse.*
 import io.ktor.util.*
 import io.ktor.websocket.Frame
+import io.ktor.websocket.readText
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.filterIsInstance
+import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.serialization.json.Json
 import org.burgas.dao.IdentityEntity
 import org.burgas.dao.PublicationEntity
@@ -97,6 +101,32 @@ fun Application.configurePublicationRouter() {
         }
 
         route("/api/v1/publications") {
+
+            webSocket("/ws/by-community") {
+                connections += this
+                try {
+                    val communityId = UUID.fromString(call.parameters["communityId"])
+                    val communityEntity = communityService.findEntity(communityId)
+                    val publicationFullResponses = newSuspendedTransaction(
+                        db = DatabaseConnection.postgres, context = Dispatchers.Default
+                    ) {
+                        communityEntity.publications.map { it.toFullResponse() }
+                    }
+                    publicationFullResponses.forEach { send(Frame.Text(Json.encodeToString(it))) }
+                    incoming.receiveAsFlow().filterIsInstance<Frame.Text>()
+                        .collect { frameText ->
+                            val text = frameText.readText()
+                            val publicationFullResponse = Json.decodeFromString<PublicationFullResponse>(text)
+                            if (publicationFullResponse.community?.id == communityId) {
+                                send(Frame.Text(text))
+                            } else {
+                                send(Frame.Text("Wrong community for this publication"))
+                            }
+                        }
+                } finally {
+                    connections -= this
+                }
+            }
 
             authenticate("basic-auth-all") {
 

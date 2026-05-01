@@ -7,13 +7,16 @@ import io.ktor.server.auth.*
 import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
-import io.ktor.server.sse.heartbeat
-import io.ktor.server.sse.sse
-import io.ktor.sse.ServerSentEvent
+import io.ktor.server.sse.*
+import io.ktor.server.websocket.*
+import io.ktor.sse.*
 import io.ktor.util.*
+import io.ktor.websocket.*
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.filterIsInstance
+import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.serialization.json.Json
 import org.burgas.dao.CommentEntity
 import org.burgas.dao.IdentityEntity
@@ -25,6 +28,7 @@ import org.burgas.service.PublicationService
 import org.jetbrains.exposed.dao.load
 import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransaction
 import java.util.*
+import java.util.concurrent.CopyOnWriteArraySet
 import kotlin.time.Duration
 
 fun Application.configureCommentRouter() {
@@ -34,6 +38,7 @@ fun Application.configureCommentRouter() {
     val comments = MutableSharedFlow<CommentFullResponse>(
         replay = Int.MAX_VALUE, onBufferOverflow = BufferOverflow.DROP_LATEST
     )
+    val connections: CopyOnWriteArraySet<DefaultWebSocketServerSession> = CopyOnWriteArraySet()
 
     routing {
 
@@ -96,6 +101,32 @@ fun Application.configureCommentRouter() {
 
         route("/api/v1/comments") {
 
+            webSocket("/ws/by-publication") {
+                connections += this
+                try {
+                    val publicationId = UUID.fromString(call.parameters["publicationId"])
+                    val publicationEntity = publicationService.findEntity(publicationId)
+                    val commentFullResponses = newSuspendedTransaction(
+                        db = DatabaseConnection.postgres, context = Dispatchers.Default
+                    ) {
+                        publicationEntity.comments.map { it.toFullResponse() }
+                    }
+                    commentFullResponses.forEach { send(Frame.Text(Json.encodeToString(it))) }
+                    incoming.receiveAsFlow().filterIsInstance<Frame.Text>()
+                        .collect { frameText ->
+                            val text = frameText.readText()
+                            val commentFullResponse = Json.decodeFromString<CommentFullResponse>(text)
+                            if (commentFullResponse.publication?.id == publicationId) {
+                                send(Frame.Text(text))
+                            } else {
+                                send(Frame.Text("Wrong comment for this publication"))
+                            }
+                        }
+                } finally {
+                    connections -= this
+                }
+            }
+
             authenticate("basic-auth-all") {
 
                 sse("/by-publication") {
@@ -124,6 +155,9 @@ fun Application.configureCommentRouter() {
                     val files = call.attributes[AttributeKey<List<PartData>>("files")]
                     val commentFullResponse = commentService.create(commentRequest, files)
                     comments.emit(commentFullResponse)
+                    connections.forEach { defaultWebSocketServerSession ->
+                        defaultWebSocketServerSession.send(Frame.Text(Json.encodeToString(commentFullResponse)))
+                    }
                     call.respond(HttpStatusCode.OK)
                 }
 
