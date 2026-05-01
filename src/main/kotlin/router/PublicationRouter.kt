@@ -7,21 +7,32 @@ import io.ktor.server.auth.*
 import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
+import io.ktor.server.sse.*
+import io.ktor.sse.*
 import io.ktor.util.*
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.channels.BufferOverflow
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.serialization.json.Json
 import org.burgas.dao.IdentityEntity
 import org.burgas.dao.PublicationEntity
 import org.burgas.database.DatabaseConnection
+import org.burgas.dto.PublicationFullResponse
 import org.burgas.dto.PublicationRequest
+import org.burgas.service.CommunityService
 import org.burgas.service.PublicationService
 import org.jetbrains.exposed.dao.load
 import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransaction
 import java.util.*
+import kotlin.time.Duration
 
 fun Application.configurePublicationRouter() {
 
+    val communityService = CommunityService()
     val publicationService = PublicationService()
+    val publications = MutableSharedFlow<PublicationFullResponse>(
+        replay = Int.MAX_VALUE, onBufferOverflow = BufferOverflow.DROP_LATEST
+    )
 
     routing {
 
@@ -85,6 +96,22 @@ fun Application.configurePublicationRouter() {
 
             authenticate("basic-auth-all") {
 
+                sse("/by-community") {
+                    heartbeat { period = Duration.INFINITE }
+                    val communityId = UUID.fromString(call.parameters["communityId"])
+                    val communityEntity = communityService.findEntity(communityId)
+                    val publicationFullResponses = newSuspendedTransaction(
+                        db = DatabaseConnection.postgres, context = Dispatchers.Default
+                    ) {
+                        communityEntity.publications.map { it.toFullResponse() }
+                    }
+                    publicationFullResponses.forEach { publications.tryEmit(it) }
+                    publications.collect {
+                        if (it.community?.id == communityEntity.id.value)
+                            send(ServerSentEvent(Json.encodeToString(it)))
+                    }
+                }
+
                 get("/by-id") {
                     val publicationId = UUID.fromString(call.parameters["publicationId"])
                     call.respond(HttpStatusCode.OK, publicationService.findById(publicationId))
@@ -93,7 +120,8 @@ fun Application.configurePublicationRouter() {
                 post("/create") {
                     val publicationRequest = call.attributes[AttributeKey<PublicationRequest>("publicationRequest")]
                     val files = call.attributes[AttributeKey<List<PartData>>("files")]
-                    publicationService.create(publicationRequest, files)
+                    val publicationFullResponse = publicationService.create(publicationRequest, files)
+                    publications.emit(publicationFullResponse)
                     call.respond(HttpStatusCode.OK)
                 }
 

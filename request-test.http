@@ -261,6 +261,12 @@ Host: localhost:9000
 Accept: application/json
 Authorization: Basic zagor@gmail.com zagor
 
+###
+GET /api/v1/messages/by-chat?chatId=267ac6cc-da06-43b6-b372-9998952c16ba
+Host: localhost:9000
+Accept: application/json
+Authorization: Basic burgasvv@gmail.com burgasvv
+
 
 
 ### Community Requests
@@ -357,6 +363,12 @@ Authorization: Basic burgasvv@gmail.com burgasvv
 
 ###
 GET /api/v1/publications/by-id?publicationId=3562170e-4e47-4c81-8f41-be1d42919ab5
+Host: localhost:9000
+Accept: application/json
+Authorization: Basic burgasvv@gmail.com burgasvv
+
+###
+GET /api/v1/publications/by-community?communityId=50272236-22f1-45b0-ad60-d92de57637b9
 Host: localhost:9000
 Accept: application/json
 Authorization: Basic burgasvv@gmail.com burgasvv
