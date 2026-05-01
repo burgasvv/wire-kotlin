@@ -110,7 +110,7 @@ fun Application.configureMessageRouter() {
                     ) {
                         chatEntity.messages.map { it.toFullResponse() }
                     }
-                    messageFullResponses.forEach { send(Frame.Text(it.toString())) }
+                    messageFullResponses.forEach { send(Frame.Text(Json.encodeToString(it))) }
                     incoming.receiveAsFlow().filterIsInstance<Frame.Text>()
                         .collect { frameText ->
                             val text = frameText.readText()
@@ -155,7 +155,7 @@ fun Application.configureMessageRouter() {
                     val messageFullResponse = messageService.create(messageRequest, files)
                     messages.emit(messageFullResponse)
                     connections.forEach { defaultWebSocketServerSession ->
-                        defaultWebSocketServerSession.send(Frame.Text(messageFullResponse.toString()))
+                        defaultWebSocketServerSession.send(Frame.Text(Json.encodeToString(messageFullResponse)))
                     }
                     call.respond(HttpStatusCode.OK)
                 }

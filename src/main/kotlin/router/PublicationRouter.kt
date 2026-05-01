@@ -8,8 +8,10 @@ import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import io.ktor.server.sse.*
+import io.ktor.server.websocket.DefaultWebSocketServerSession
 import io.ktor.sse.*
 import io.ktor.util.*
+import io.ktor.websocket.Frame
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -24,6 +26,7 @@ import org.burgas.service.PublicationService
 import org.jetbrains.exposed.dao.load
 import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransaction
 import java.util.*
+import java.util.concurrent.CopyOnWriteArraySet
 import kotlin.time.Duration
 
 fun Application.configurePublicationRouter() {
@@ -33,6 +36,7 @@ fun Application.configurePublicationRouter() {
     val publications = MutableSharedFlow<PublicationFullResponse>(
         replay = Int.MAX_VALUE, onBufferOverflow = BufferOverflow.DROP_LATEST
     )
+    val connections: CopyOnWriteArraySet<DefaultWebSocketServerSession> = CopyOnWriteArraySet()
 
     routing {
 
@@ -122,6 +126,9 @@ fun Application.configurePublicationRouter() {
                     val files = call.attributes[AttributeKey<List<PartData>>("files")]
                     val publicationFullResponse = publicationService.create(publicationRequest, files)
                     publications.emit(publicationFullResponse)
+                    connections.forEach { defaultWebSocketServerSession ->
+                        defaultWebSocketServerSession.send(Frame.Text(Json.encodeToString(publicationFullResponse)))
+                    }
                     call.respond(HttpStatusCode.OK)
                 }
 
