@@ -16,6 +16,8 @@ import io.ktor.websocket.readText
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.filterIsInstance
+import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.serialization.json.Json
 import org.burgas.dao.IdentityEntity
 import org.burgas.dao.MessageEntity
@@ -109,20 +111,16 @@ fun Application.configureMessageRouter() {
                         chatEntity.messages.map { it.toFullResponse() }
                     }
                     messageFullResponses.forEach { send(Frame.Text(it.toString())) }
-                    for (frame in incoming) {
-                        when (frame) {
-                            is Frame.Text -> {
-                                val text = frame.readText()
-                                val messageFullResponse = Json.decodeFromString<MessageFullResponse>(text)
-                                if (messageFullResponse.chat?.id == chatId) {
-                                    send(Frame.Text(text))
-                                } else {
-                                    send(Frame.Text("Wrong chat for this message"))
-                                }
+                    incoming.receiveAsFlow().filterIsInstance<Frame.Text>()
+                        .collect { frameText ->
+                            val text = frameText.readText()
+                            val messageFullResponse = Json.decodeFromString<MessageFullResponse>(text)
+                            if (messageFullResponse.chat?.id == chatId) {
+                                send(Frame.Text(text))
+                            } else {
+                                send(Frame.Text("Wrong chat for this message"))
                             }
-                            else -> send(Frame.Text("Wrong type of message"))
                         }
-                    }
                 } finally {
                     connections -= this
                 }
