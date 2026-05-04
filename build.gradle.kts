@@ -36,6 +36,7 @@ dependencies {
     implementation("org.postgresql:postgresql:42.7.10")
     implementation("redis.clients:jedis:5.1.2")
     implementation("org.mindrot:jbcrypt:0.4")
+    implementation("com.zaxxer:HikariCP:5.1.0")
     implementation("io.ktor:ktor-server-sessions:3.4.2")
     implementation("io.ktor:ktor-server-status-pages:3.4.2")
     implementation("io.ktor:ktor-server-cors:3.4.2")

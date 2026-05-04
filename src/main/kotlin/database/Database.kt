@@ -1,5 +1,7 @@
 package org.burgas.database
 
+import com.zaxxer.hikari.HikariConfig
+import com.zaxxer.hikari.HikariDataSource
 import io.ktor.server.application.*
 import io.ktor.server.config.*
 import org.jetbrains.exposed.dao.id.UUIDTable
@@ -18,12 +20,17 @@ class DatabaseConnection {
     companion object {
         private val config = ApplicationConfig("application.yaml")
 
-        val postgres = Database.connect(
-            driver = config.property("ktor.postgres.driver").getString(),
-            url = config.property("ktor.postgres.url").getString(),
-            user = config.property("ktor.postgres.user").getString(),
+        val hikariConfig = HikariConfig().apply {
+            jdbcUrl = config.property("ktor.postgres.url").getString()
+            driverClassName = config.property("ktor.postgres.driver").getString()
+            username = config.property("ktor.postgres.user").getString()
             password = config.property("ktor.postgres.password").getString()
-        )
+            maximumPoolSize = 20
+            minimumIdle = 5
+            connectionTimeout = 30000
+        }
+        val dataSource = HikariDataSource(hikariConfig)
+        val postgres = Database.connect(datasource = dataSource)
 
         val redis = Jedis(
             config.property("ktor.redis.host").getString(),
